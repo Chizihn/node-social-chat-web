@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { axiosErrorHandler } from "@/utils/error";
-import axios from "axios";
-import { API_URL } from "@/constants";
 import { toast } from "sonner";
 import { token } from "@/utils/session";
 import { useAuthStore } from "@/store/useAuthStore";
+import api from "@/lib/api";
 
 export default function VerifyEmail() {
   const router = useRouter();
@@ -19,6 +18,7 @@ export default function VerifyEmail() {
   const [success, setSuccess] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0); // Cooldown timer for resend
   const user = useAuthStore((state) => state.user);
+  const { setUser } = useAuthStore();
 
   useEffect(() => {
     // Start countdown if cooldown is active
@@ -29,6 +29,13 @@ export default function VerifyEmail() {
       return () => clearTimeout(timer);
     }
   }, [resendCooldown]);
+
+  useEffect(() => {
+    if (user?.isVerified) {
+      toast.success("Email already verified!");
+      router.push("/feed");
+    }
+  }, [router, user?.isVerified]);
 
   const handleChange = (index: number, value: string) => {
     if (value.length > 1) {
@@ -61,25 +68,21 @@ export default function VerifyEmail() {
     };
 
     try {
-      const response = await axios.post(
-        `${API_URL}/auth/verify-email`,
-        verifyData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await api.post(`/auth/verify-email`, verifyData, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setUser({ ...user, isVerified: true });
 
       const { message } = response.data;
       toast.success(message);
       setSuccess(true);
 
       // Redirect after successful verification
-      setTimeout(() => {
-        router.push("/feed");
-      }, 2000);
+      router.push("/feed");
     } catch (err) {
       const errorMessage = axiosErrorHandler(err);
       setError(errorMessage || "Failed to verify email");
@@ -96,9 +99,9 @@ export default function VerifyEmail() {
     setError("");
 
     try {
-      const response = await axios.post(
-        `${API_URL}/auth/resend-verify-email`,
-        {},
+      const response = await api.post(
+        `/auth/resend-verify-email`,
+        { email: user?.email },
         {
           headers: {
             "Content-Type": "application/json",

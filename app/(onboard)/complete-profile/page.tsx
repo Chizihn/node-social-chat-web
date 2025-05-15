@@ -2,8 +2,6 @@
 import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "next/navigation";
-import axios from "axios";
-import { API_URL } from "@/constants";
 import { toast } from "sonner";
 
 // UI Components
@@ -30,6 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Loader2, Camera } from "lucide-react";
 import { Gender, User } from "@/types/user";
+import api from "@/lib/api";
 
 // Dummy options
 const interestOptions = [
@@ -59,7 +58,7 @@ export default function CompleteProfilePage() {
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     gender: user?.gender || Gender.MALE,
-    dateOfBirth: user?.dateOfBirth || "",
+    dateOfBirth: user?.dateOfBirth || new Date(),
     location: user?.location || "",
     hobbies: user?.hobbies || [],
     interests: user?.interests || [],
@@ -103,7 +102,7 @@ export default function CompleteProfilePage() {
       const formData = new FormData();
       formData.append("avatar", avatarFile);
 
-      const response = await axios.post(`${API_URL}/profile/avatar`, formData, {
+      const response = await api.post(`/profile/avatar`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
@@ -134,11 +133,7 @@ export default function CompleteProfilePage() {
         ...(avatarUrl && { avatar: avatarUrl }),
       };
 
-      const response = await axios.put(`${API_URL}/profile`, profileData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.put(`/profile`, profileData);
 
       setUser({ ...user, ...response.data });
       toast.success("Profile updated!");
@@ -210,7 +205,11 @@ export default function CompleteProfilePage() {
               <Input
                 type="date"
                 name="dateOfBirth"
-                value={formData.dateOfBirth}
+                value={
+                  formData.dateOfBirth
+                    ? formData.dateOfBirth.toISOString().split("T")[0]
+                    : undefined
+                }
                 onChange={handleChange}
               />
               <Input

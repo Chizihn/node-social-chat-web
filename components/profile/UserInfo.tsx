@@ -1,24 +1,15 @@
 // components/profile/UserInfo.tsx
 import React from "react";
-import { Button } from "../ui/button";
-import { Edit3, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { User } from "@/types/user"; // Replace with your user type
 
 type UserInfoProps = {
   user: User;
-  onEditClick: () => void;
 };
 
-const UserInfo: React.FC<UserInfoProps> = ({ user, onEditClick }) => {
+const UserInfo: React.FC<UserInfoProps> = ({ user }) => {
   return (
     <div className="mt-2">
-      <div className="flex justify-between items-end -mt-16 mb-4">
-        <Button className="flex items-center gap-2" onClick={onEditClick}>
-          <Edit3 className="h-4 w-4 mr-2" />
-          Edit Profile
-        </Button>
-      </div>
-
       <h1 className="text-2xl font-bold">
         {user.firstName} {user.lastName}
       </h1>

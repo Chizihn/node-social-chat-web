@@ -1,57 +1,51 @@
 import { API_URL } from "@/constants";
 import { axiosErrorHandler } from "@/utils/error";
-import { token } from "@/utils/session";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import { useState } from "react";
 import { queryClient } from "../queryClient";
 import { Friends } from "@/types/friend";
+import { User } from "@/types/user";
+import api from "../api";
 
 export const useFriends = (options = {}) => {
   const {
-    data: friends,
-    isLoading: friendsLoading,
-    error: FriendsError,
-    refetch: refetchFriends,
-    isFetching: friendsFetching,
-  } = useQuery<Friends>({
-    queryKey: ["friends"],
+    data: friends, // Rename users back to friends
+    isLoading: friendsLoading, // Rename usersLoading back to friendsLoading
+    error: friendsError, // Rename usersError back to friendsError
+    refetch: refetchFriends, // Rename refetchUsers back to refetchFriends
+    isFetching: friendsFetching, // Rename usersFetching back to friendsFetching
+  } = useQuery<User[]>({
+    queryKey: ["friends"], // Keep the query key as "friends"
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/friends`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.get(`${API_URL}/friends`);
 
         if (response.status !== 200) {
-          throw new Error("Failed to fetch friend requests");
+          throw new Error("Failed to fetch friends");
         }
 
         console.log("data", response.data);
 
-        return response.data.data || [];
+        return response.data.data || []; // Assuming the response is in { data: User[] }
       } catch (error) {
         const err = axiosErrorHandler(error);
-        throw new Error(err || "Failed to fetch friend requests");
+        throw new Error(err || "Failed to fetch friends");
       }
     },
-    // Caching and optimization settings
     staleTime: 5 * 60 * 1000, // 5 minutes before data is considered stale
 
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: false, // Don't refetch on component mount if data exists
-    retry: 2, // Retry failed requests twice
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 2,
     ...options, // Allow overriding any options from component
   });
 
   return {
-    friends,
-    friendsLoading,
-    FriendsError,
-    refetchFriends,
-    friendsFetching,
+    friends, // The list of friends (which are User objects)
+    friendsLoading, // Loading state for friends data
+    friendsError, // Error state for fetching friends
+    refetchFriends, // Function to refetch the friends data
+    friendsFetching, // Whether the data is currently being fetched
   };
 };
 
@@ -66,12 +60,7 @@ export const useFriendRequests = (options = {}) => {
     queryKey: ["friendRequests"],
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/friend-requests`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.get(`/friend-requests`);
 
         if (response.status !== 200) {
           throw new Error("Failed to fetch friend requests");
@@ -112,11 +101,7 @@ export const useSentRequests = (options = {}) => {
     queryKey: ["sentRequests"],
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/requests`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.get(`/requests`);
 
         if (response.status !== 200) {
           throw new Error("Failed to fetch sent requests");
@@ -158,12 +143,7 @@ export const useFindFriends = (options = {}) => {
     queryKey: ["friendSugestions"],
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/find`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.get(`/find`);
 
         if (response.status !== 200) {
           throw new Error("Failed to fetch potential friends ");
@@ -205,15 +185,7 @@ export const useAddFriend = () => {
       setError(null);
 
       try {
-        const response = await axios.post(
-          `${API_URL}/request`,
-          { recipientId: userId },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await api.post(`/request`, { recipientId: userId });
 
         return response.data;
       } catch (error) {
@@ -255,15 +227,7 @@ export const useAcceptFriendRequest = () => {
       setError(null);
 
       try {
-        const response = await axios.post(
-          `${API_URL}/request/accept`,
-          { requestId },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await api.post(`/request/accept`, { requestId });
         return response.data;
       } catch (error) {
         const err = axiosErrorHandler(error);
@@ -304,15 +268,7 @@ export const useRejectFriendRequest = () => {
       setError(null);
 
       try {
-        const response = await axios.post(
-          `${API_URL}/request/reject`,
-          { requestId },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await api.post(`/request/reject`, { requestId });
         return response.data;
       } catch (error) {
         const err = axiosErrorHandler(error);
@@ -353,15 +309,7 @@ export const useRemoveFriend = () => {
       setError(null);
 
       try {
-        const response = await axios.post(
-          `${API_URL}/remove`,
-          { friendId },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await api.post(`/friends/remove`, { friendId });
         return response.data;
       } catch (error) {
         const err = axiosErrorHandler(error);

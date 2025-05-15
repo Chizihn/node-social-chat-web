@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { UserPlus, Users, UserX } from "lucide-react";
+import { UserPlus, UserX } from "lucide-react";
 import { Button } from "../ui/button";
 import { Friend } from "@/types/friend";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/lib/queries/useFriends";
 
 const FriendRequestCard = ({ request }: { request: Friend }) => {
-  const { requester, createdAt, mutualFriends, id: requestId } = request;
+  const { requester, createdAt, id: requestId } = request;
 
   const { acceptFriendRequest, isLoading: accepting } =
     useAcceptFriendRequest();
@@ -51,11 +51,11 @@ const FriendRequestCard = ({ request }: { request: Friend }) => {
             <h4 className="font-medium">
               {requester.firstName} {requester.lastName}
             </h4>
-            <div className="flex items-center text-sm text-muted-foreground">
+            {/* <div className="flex items-center text-sm text-muted-foreground">
               <Users className="h-3 w-3 mr-1" />
               {mutualFriends} mutual{" "}
               {mutualFriends === 1 ? "friend" : "friends"}
-            </div>
+            </div> */}
             <p className="text-xs text-muted-foreground mt-1">
               Requested {formattedDate}
             </p>

@@ -1,11 +1,9 @@
-import { API_URL } from "@/constants";
 import { Comments, CreateComment } from "@/types/post";
 import { axiosErrorHandler } from "@/utils/error";
-import { token } from "@/utils/session";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import { queryClient } from "../queryClient";
 import { useState } from "react";
+import api from "../api";
 
 export const useCommentsByPost = (postId: string, options = {}) => {
   const {
@@ -18,12 +16,7 @@ export const useCommentsByPost = (postId: string, options = {}) => {
     queryKey: ["comments", postId], // Define the query key
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/comments/${postId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // Use token for authentication
-          },
-        });
+        const response = await api.get(`/comments/${postId}`);
 
         if (response.status !== 200) {
           throw new Error(`Failed to fetch comments for ${postId}`);
@@ -63,15 +56,7 @@ export const useAddComment = (postId: string) => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await axios.post(
-          `${API_URL}/comments/${postId}`,
-          data,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await api.post(`/comments/${postId}`, data);
         return response.data;
       } catch (error) {
         const err = axiosErrorHandler(error);
@@ -101,5 +86,3 @@ export const useAddComment = (postId: string) => {
     isSuccess: addCommentMutation.isSuccess,
   };
 };
-
-

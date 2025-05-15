@@ -10,11 +10,10 @@ import { Comment, Comments, CreateComment, Post } from "@/types/post";
 import { useAddComment, useCommentsByPost } from "@/lib/queries/useComments";
 import { useAuthStore } from "@/store/useAuthStore";
 import { User } from "@/types/user";
-import axios from "axios";
-import { API_URL } from "@/constants";
 import { token } from "@/utils/session";
 import { useLikedItems } from "@/lib/queries/useLike";
 import CommentCard from "../cards/CommentCard";
+import api from "@/lib/api";
 
 const CommentView: React.FC<{ postId: string; post: Post }> = ({
   postId,
@@ -163,8 +162,8 @@ const CommentView: React.FC<{ postId: string; post: Post }> = ({
 
     try {
       // API call to like/unlike
-      await axios.post(
-        `${API_URL}/comments/${id}/like`,
+      await api.post(
+        `/comments/${id}/like`,
         {},
         {
           headers: {

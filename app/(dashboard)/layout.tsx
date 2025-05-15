@@ -4,13 +4,12 @@ import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
-import axios from "axios";
-import { API_URL } from "@/constants";
 import { token } from "@/utils/session";
 import Loading from "@/components/Loading";
 import { User } from "@/types/user";
 import { useUsers } from "@/lib/queries/useUsers";
 import { useLikedItems } from "@/lib/queries/useLike";
+import api from "@/lib/api";
 
 export default function DashboardLayout({
   children,
@@ -29,11 +28,7 @@ export default function DashboardLayout({
           return { user: null };
         }
 
-        const response = await axios.get(`${API_URL}/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.get(`/me`, {});
 
         if (response.status !== 200) {
           throw new Error("Failed to fetch user data");

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Calendar, MapPin, MoreHorizontal, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,10 +17,15 @@ import { useFollow } from "@/lib/queries/useFollow";
 import { useUserByUsername } from "@/lib/queries/useUsers";
 import { useGetUserPosts } from "@/lib/queries/usePost";
 import PostView from "../feed/PostView";
+import Loading from "../Loading";
+import { useAuthStore } from "@/store/useAuthStore";
+import { queryClient } from "@/lib/queryClient";
 
 const UserProfile: React.FC<{ username: string }> = ({ username }) => {
   const { followUser, unfollowUser, isLoading: followLoading } = useFollow();
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const currentUser = useAuthStore((state) => state.user);
 
   const { user, isLoading, error } = useUserByUsername(username);
 
@@ -34,16 +39,11 @@ const UserProfile: React.FC<{ username: string }> = ({ username }) => {
     handlePageChange,
   } = useGetUserPosts(username as string);
 
-  const isAlreadyFollowing = useMemo(() => {
-    return user?.following?.includes(user.id);
-  }, [user]);
+  const isAlreadyFollowing = user?.followers?.includes(
+    currentUser?.id as string
+  );
 
-  if (isLoading)
-    return (
-      <div className="h-full justify-center items-center">
-        <p>Loading user...</p>
-      </div>
-    );
+  if (isLoading) return <Loading />;
 
   if (error)
     return (
@@ -64,6 +64,9 @@ const UserProfile: React.FC<{ username: string }> = ({ username }) => {
       setIsUpdating(true);
       if (isAlreadyFollowing) {
         await unfollowUser(user.id);
+        queryClient.invalidateQueries({
+          queryKey: ["user", username],
+        });
         toast.success("Unfollowed user");
       } else {
         await followUser(user.id);

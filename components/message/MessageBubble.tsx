@@ -1,14 +1,7 @@
 import React from "react";
 import { Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface Message {
-  id: string;
-  senderId: string;
-  text: string;
-  timestamp: string;
-  status: "sending" | "sent" | "delivered" | "read";
-}
+import { Message, MessageStatus } from "@/types/message";
 
 interface MessageBubbleProps {
   message: Message;
@@ -18,13 +11,13 @@ interface MessageBubbleProps {
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isMe }) => {
   const renderMessageStatus = () => {
     switch (message.status) {
-      case "sending":
+      case MessageStatus.SENDING:
         return null;
-      case "sent":
+      case MessageStatus.SENT:
         return <Check className="h-3.5 w-3.5 text-muted-foreground" />;
-      case "delivered":
+      case MessageStatus.DELIVERED:
         return <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />;
-      case "read":
+      case MessageStatus.READ:
         return <CheckCheck className="h-3.5 w-3.5 text-blue-500" />;
       default:
         return null;
@@ -43,7 +36,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isMe }) => {
       >
         <p className="text-sm">{message.text}</p>
         <div className="flex items-center justify-end gap-1 mt-1">
-          <span className="text-xs opacity-70">{message.timestamp}</span>
+          <span className="text-xs opacity-70">
+            {new Date(message.timestamp).toLocaleDateString()}
+          </span>
           {isMe && renderMessageStatus()}
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 
 const CreatePost = () => {
   const [text, setText] = useState("");
@@ -19,12 +19,7 @@ const CreatePost = () => {
     media.forEach((file) => formData.append("media", file)); // same field name as multer expects
 
     try {
-      const res = await axios.post("/posts", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer YOUR_AUTH_TOKEN`, // if needed
-        },
-      });
+      const res = await api.post("/posts", formData);
       console.log("Post created:", res.data);
     } catch (err) {
       console.error("Error uploading post:", err);

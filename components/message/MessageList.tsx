@@ -3,21 +3,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, CheckCheck } from "lucide-react";
-
-interface Attachment {
-  name: string;
-  type: string;
-  url: string;
-}
-
-interface Message {
-  id: string;
-  senderId: string;
-  text: string;
-  timestamp: string;
-  status: "sending" | "sent" | "delivered" | "read";
-  attachments?: Attachment[];
-}
+import { Attachment, Message, MessageStatus } from "@/types/message";
 
 interface MessageListProps {
   messages: Message[];
@@ -31,12 +17,12 @@ const MessageList: React.FC<MessageListProps> = ({
   const groupedMessages = messages.reduce(
     (groups: Message[][], message, index) => {
       const prev = messages[index - 1];
-      const prevTime = prev ? new Date(prev.timestamp).getTime() : 0;
-      const currTime = new Date(message.timestamp).getTime();
+      const prevTime = prev ? new Date(prev.createdAt).getTime() : 0;
+      const currTime = new Date(message.createdAt).getTime();
 
       if (
         !prev ||
-        prev.senderId !== message.senderId ||
+        prev.sender.id !== message.sender.id ||
         currTime - prevTime > 5 * 60 * 1000
       ) {
         groups.push([message]);
@@ -51,16 +37,18 @@ const MessageList: React.FC<MessageListProps> = ({
 
   const renderMessageStatus = (status: Message["status"]) => {
     switch (status) {
-      case "sending":
+      case MessageStatus.SENDING:
         return (
           <span className="text-muted-foreground text-xs">Sending...</span>
         );
-      case "sent":
+      case MessageStatus.SENT:
         return <Check className="h-3 w-3 text-muted-foreground" />;
-      case "delivered":
+      case MessageStatus.DELIVERED:
         return <CheckCheck className="h-3 w-3 text-muted-foreground" />;
-      case "read":
+      case MessageStatus.READ:
         return <CheckCheck className="h-3 w-3 text-blue-500" />;
+      case MessageStatus.ERROR:
+        return <span className="text-red-500 text-xs">Failed</span>;
       default:
         return null;
     }
@@ -69,20 +57,20 @@ const MessageList: React.FC<MessageListProps> = ({
   const renderAttachment = (attachment: Attachment) => {
     if (attachment.type.startsWith("image/")) {
       return (
-        <div className="rounded-md overflow-hidden max-w-xs">
+        <div className="rounded-md overflow-hidden max-w-xs mt-2">
           <Image
             src={attachment.url}
             alt={attachment.name}
             width={300}
             height={300}
-            className="rounded-md object-cover w-full h-auto"
+            className="object-cover w-full h-auto rounded-md"
           />
         </div>
       );
     }
 
     return (
-      <div className="bg-accent rounded-md p-3 flex items-center gap-2 max-w-xs">
+      <div className="bg-accent rounded-md p-3 flex items-center gap-2 max-w-xs mt-2">
         <div className="bg-primary/10 p-2 rounded">
           <svg
             className="h-6 w-6 text-primary"
@@ -106,10 +94,15 @@ const MessageList: React.FC<MessageListProps> = ({
     );
   };
 
+  const formatTime = (timestamp: Date | string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
   return (
     <div className="p-4 space-y-6">
       {groupedMessages.map((group, i) => {
-        const isCurrentUser = group[0].senderId === currentUserId;
+        const isCurrentUser = group[0].sender.id === currentUserId;
 
         return (
           <div
@@ -119,86 +112,80 @@ const MessageList: React.FC<MessageListProps> = ({
               isCurrentUser ? "items-end" : "items-start"
             )}
           >
-            <div
-              className={cn(
-                "flex items-end gap-2",
-                isCurrentUser && "flex-row-reverse"
-              )}
-            >
+            <div className="flex items-end gap-2">
               {!isCurrentUser && (
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={group[0].sender.avatar || "/images/user.webp"}
+                    alt={group[0].sender.username || "User"}
+                  />
+                  <AvatarFallback>
+                    {(group[0].sender.username || "U")[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+
+              <div className="flex flex-col max-w-[90%]">
+                <div
+                  className={cn(
+                    "px-4 py-2 rounded-2xl text-sm",
+                    isCurrentUser
+                      ? "bg-primary text-primary-foreground rounded-br-none"
+                      : "bg-muted rounded-bl-none"
+                  )}
+                >
+                  {group[0].text}
+                  {group[0].attachments?.map((att) => renderAttachment(att))}
+                </div>
+                <div
+                  className={cn(
+                    "flex items-center gap-1 text-xs mt-1 px-2",
+                    isCurrentUser ? "justify-end" : "justify-start"
+                  )}
+                >
+                  <span className="text-muted-foreground">
+                    {formatTime(group[0].createdAt)}
+                  </span>
+                  {isCurrentUser && renderMessageStatus(group[0].status)}
+                </div>
+              </div>
+
+              {isCurrentUser && (
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/images/user.webp" />
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
               )}
-
-              <div
-                className={cn(
-                  "max-w-[75%] px-4 py-2 rounded-2xl",
-                  isCurrentUser
-                    ? "bg-primary text-primary-foreground rounded-br-none"
-                    : "bg-muted rounded-bl-none"
-                )}
-              >
-                {group[0].text}
-                {group[0].attachments?.map((att, j) => (
-                  <div key={j} className="mt-2">
-                    {renderAttachment(att)}
-                  </div>
-                ))}
-                <div
-                  className={cn(
-                    "flex items-center gap-1 text-xs mt-1",
-                    isCurrentUser ? "justify-end" : "justify-start"
-                  )}
-                >
-                  <span
-                    className={
-                      isCurrentUser
-                        ? "text-primary-foreground/70"
-                        : "text-muted-foreground"
-                    }
-                  >
-                    {group[0].timestamp}
-                  </span>
-                  {isCurrentUser && renderMessageStatus(group[0].status)}
-                </div>
-              </div>
             </div>
 
-            {group.slice(1).map((msg) => (
-              <div
-                key={msg.id}
-                className={cn(
-                  "max-w-[75%] px-4 py-2 rounded-2xl",
-                  isCurrentUser
-                    ? "bg-primary text-primary-foreground rounded-br-none ml-10"
-                    : "bg-muted rounded-bl-none mr-10"
-                )}
-              >
-                {msg.text}
-                {msg.attachments?.map((att, j) => (
-                  <div key={j} className="mt-2">
-                    {renderAttachment(att)}
-                  </div>
-                ))}
-                <div
-                  className={cn(
-                    "flex items-center gap-1 text-xs mt-1",
-                    isCurrentUser ? "justify-end" : "justify-start"
-                  )}
-                >
-                  <span
-                    className={
+            {group.slice(1).map((msg, j) => (
+              <div className="flex items-end gap-2" key={`${i}-${j}`}>
+                {!isCurrentUser && <div className="w-8" />}
+                <div className="flex flex-col max-w-[90%]">
+                  <div
+                    className={cn(
+                      "px-4 py-2 rounded-2xl text-sm",
                       isCurrentUser
-                        ? "text-primary-foreground/70"
-                        : "text-muted-foreground"
-                    }
+                        ? "bg-primary text-primary-foreground rounded-br-none"
+                        : "bg-muted rounded-bl-none"
+                    )}
                   >
-                    {msg.timestamp}
-                  </span>
-                  {isCurrentUser && renderMessageStatus(msg.status)}
+                    {msg.text}
+                    {msg.attachments?.map((att) => renderAttachment(att))}
+                  </div>
+                  <div
+                    className={cn(
+                      "flex items-center gap-1 text-xs mt-1 px-2",
+                      isCurrentUser ? "justify-end" : "justify-start"
+                    )}
+                  >
+                    <span className="text-muted-foreground">
+                      {formatTime(msg.createdAt)}
+                    </span>
+                    {isCurrentUser && renderMessageStatus(msg.status)}
+                  </div>
                 </div>
+                {isCurrentUser && <div className="w-8" />}
               </div>
             ))}
           </div>

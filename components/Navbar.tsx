@@ -1,24 +1,23 @@
 import { useState } from "react";
-import { Bell, Home, Menu, MessageCircle, Search, User, X } from "lucide-react";
+import { Menu, Search, User, X } from "lucide-react";
+import NotificationDialog from "./notification/NotificationDialog";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import Link from "next/link";
-import { cn } from "@/utils";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const Navbar = () => {
   const user = useAuthStore((state) => state.user);
-  const [isSearchActive, setIsSearchActive] = useState<boolean>(false);
+  // const [isSearchActive, setIsSearchActive] = useState<boolean>(false);
   const [isMobileSearchVisible, setIsMobileSearchVisible] =
     useState<boolean>(false);
 
   const mobileNavItems = [
-    { icon: Home, label: "Home", href: "/feed" },
+    // { icon: Home, label: "Home", href: "/feed" },
     { icon: Search, label: "Search", href: "/search" },
-    { icon: MessageCircle, label: "Messages", href: "/messages" },
-    { icon: Bell, label: "Notifications", href: "/notifications" },
+    // { icon: MessageCircle, label: "Messages", href: "/messages" },
     { icon: User, label: "Profile", href: "/profile" },
   ];
 
@@ -41,7 +40,7 @@ const Navbar = () => {
             <span className="hidden sm:inline">SocialApp</span>
           </Link>
 
-          <div
+          {/* <div
             className={cn(
               "hidden lg:flex relative transition-all duration-300 flex-1 max-w-2xl",
               isSearchActive ? "w-full" : "w-full"
@@ -54,12 +53,12 @@ const Navbar = () => {
               onFocus={() => setIsSearchActive(true)}
               onBlur={() => setIsSearchActive(false)}
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-2">
-          {mobileNavItems.slice(0, 4).map((item) => (
+          {mobileNavItems.map((item) => (
             <Button
               key={item.href}
               variant="ghost"
@@ -73,6 +72,7 @@ const Navbar = () => {
               </Link>
             </Button>
           ))}
+          <NotificationDialog />
         </nav>
 
         {/* User and Mobile Menu */}

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Paperclip, Smile, Send, X } from "lucide-react";
@@ -6,18 +6,77 @@ import { Popover, PopoverTrigger } from "@/components/ui/popover";
 
 interface MessageInputProps {
   onSendMessage: (text: string, attachments?: File[]) => void;
+  onTypingStart?: () => void;
+  onTypingStop?: () => void;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => {
-  const [message, setMessage] = useState("");
+const MessageInput: React.FC<MessageInputProps> = ({
+  onSendMessage,
+  onTypingStart,
+  onTypingStop,
+}) => {
+  const [message, setMessage] = useState<string>("");
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [isTyping, setIsTyping] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Handle typing indicators
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeout when component unmounts
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Ensure we stop typing indicator when leaving the component
+      if (isTyping && onTypingStop) {
+        onTypingStop();
+      }
+    };
+  }, [isTyping, onTypingStop]);
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newMessage = e.target.value;
+    setMessage(newMessage);
+
+    // Handle typing indicators
+    if (!isTyping && newMessage.trim().length > 0) {
+      setIsTyping(true);
+      if (onTypingStart) {
+        onTypingStart();
+      }
+    }
+
+    // Reset the timeout on each keypress
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set a new timeout to stop typing indicator after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isTyping) {
+        setIsTyping(false);
+        if (onTypingStop) {
+          onTypingStop();
+        }
+      }
+    }, 2000);
+  };
 
   const handleSend = () => {
     if (message.trim() || attachments.length > 0) {
       onSendMessage(message, attachments.length > 0 ? attachments : undefined);
       setMessage("");
       setAttachments([]);
+
+      // Stop typing indicator when sending message
+      if (isTyping) {
+        setIsTyping(false);
+        if (onTypingStop) {
+          onTypingStop();
+        }
+      }
     }
   };
 
@@ -66,7 +125,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => {
           <Textarea
             placeholder="Type a message..."
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleMessageChange}
             onKeyDown={handleKeyDown}
             className="min-h-[60px] resize-none pr-10"
           />

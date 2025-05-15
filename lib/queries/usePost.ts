@@ -2,26 +2,22 @@
 import { API_URL } from "@/constants";
 import { CreatePost, Posts } from "@/types/post";
 import { axiosErrorHandler } from "@/utils/error";
-import { token } from "@/utils/session";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useState } from "react";
 import { queryClient } from "../queryClient";
+import api from "../api";
 
 //Get all posts
 export const usePosts = (options = {}) => {
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["posts", page, limit], // Fixed typo + added pagination params to key
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/posts`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+        const response = await api.get(`${API_URL}/posts`, {
           params: {
             page,
             limit,
@@ -82,11 +78,7 @@ export const usePostsForYou = (options = {}) => {
     queryKey: ["foryou", page, limit], // Fixed typo + added pagination params to key
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/posts`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+        const response = await api.get(`/posts`, {
           params: {
             page,
             limit,
@@ -147,11 +139,7 @@ export const useGetUserPosts = (username: string) => {
     queryKey: ["userPosts", username, page, limit], // Fixed typo + added pagination params to key
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/posts/user/${username}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+        const response = await api.get(`/posts/user/${username}`, {
           params: {
             page,
             limit,
@@ -208,12 +196,7 @@ export const usePostById = (postId: string) => {
     queryKey: ["post", postId],
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/posts/${postId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.get(`/posts/${postId}`);
 
         if (response.status !== 200) {
           throw new Error("Failed to fetch posts");
@@ -245,12 +228,7 @@ export const useCreatePost = () => {
       setError(null);
 
       try {
-        const response = await axios.post(`${API_URL}/posts`, postData, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.post(`/posts`, postData);
 
         return response.data;
       } catch (err) {

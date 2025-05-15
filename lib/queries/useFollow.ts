@@ -1,25 +1,15 @@
 // src/lib/queries/useFollow.ts
 
-import { API_URL } from "@/constants";
-import { token } from "@/utils/session";
-import axios from "axios";
 import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
+import api from "../api";
 
 export const useFollow = () => {
   const { user, setUser } = useAuthStore();
 
   const followMutation = useMutation({
     mutationFn: async (userIdToFollow: string) => {
-      const response = await axios.post(
-        `${API_URL}/follow`,
-        { userIdToFollow },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await api.post(`/follow`, { userIdToFollow });
       return response.data;
     },
     onSuccess: (_data, userIdToFollow) => {
@@ -34,15 +24,7 @@ export const useFollow = () => {
 
   const unfollowMutation = useMutation({
     mutationFn: async (userIdToUnfollow: string) => {
-      const response = await axios.post(
-        `${API_URL}/unfollow`,
-        { userIdToUnfollow },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await api.post(`/unfollow`, { userIdToUnfollow });
       return response.data;
     },
     onSuccess: (_data, userIdToUnfollow) => {

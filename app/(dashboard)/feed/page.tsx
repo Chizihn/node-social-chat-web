@@ -4,8 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MoreHorizontal } from "lucide-react";
-import { stories } from "@/data";
-import Story from "@/components/feed/Story";
 import CreatePost from "@/components/feed/CreatePost";
 import PostView from "@/components/feed/PostView";
 import { usePosts } from "@/lib/queries/usePost";
@@ -29,13 +27,13 @@ export default function FeedPage() {
   return (
     <div className="py-6">
       {/* Stories row */}
-      <div className="overflow-x-auto pb-2 -mx-1 px-1">
+      {/* <div className="overflow-x-auto pb-2 -mx-1 px-1">
         <div className="flex gap-3 min-w-max px-1">
           {stories.map((story, index) => (
             <Story key={index} user={story} isActive={story.isActive} />
           ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Create post */}
       <CreatePost

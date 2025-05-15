@@ -33,6 +33,7 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     logout();
+    window.location.reload();
   };
   return (
     <aside

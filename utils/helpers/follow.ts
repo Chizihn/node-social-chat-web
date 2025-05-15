@@ -1,21 +1,10 @@
-import axios from "axios";
-import { token } from "../session";
 import { axiosErrorHandler } from "../error";
-import { API_URL } from "@/constants";
+import api from "@/lib/api";
 
 // Function to follow a user
 export const followUser = async (userIdToFollow: string) => {
   try {
-    const response = await axios.post(
-      `${API_URL}/follow`,
-      { userIdToFollow },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await api.post(`/follow`, { userIdToFollow });
     return response.data;
   } catch (error) {
     const err = axiosErrorHandler(error);
@@ -27,16 +16,7 @@ export const followUser = async (userIdToFollow: string) => {
 // Function to unfollow a user
 export const unfollowUser = async (userIdToUnfollow: string) => {
   try {
-    const response = await axios.post(
-      `${API_URL}/unfollow`,
-      { userIdToUnfollow },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await api.post(`/unfollow`, { userIdToUnfollow });
     return response.data;
   } catch (error) {
     const err = axiosErrorHandler(error);

@@ -1,20 +1,15 @@
 // stores/authStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import axios from "axios";
 import { createJSONStorage } from "zustand/middleware";
 import { SigninResponse, SignupResponse } from "@/types/auth";
 import { User } from "@/types/user";
-import {
-  ResetPasswordType,
-  SigninType,
-  SignupType,
-  VerifyEmailType,
-} from "@/validators/auth";
+import { SigninType, SignupType, VerifyEmailType } from "@/validators/auth";
 import { axiosErrorHandler } from "@/utils/error";
 import { API_URL } from "@/constants";
-import { cookieStorage, token } from "@/utils/session";
+import { cookieStorage } from "@/utils/session";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 export interface PersistAuth {
   user: User | null;
@@ -28,9 +23,6 @@ export interface AuthState extends PersistAuth {
   signin: (data: SigninType) => Promise<SigninResponse>;
   signup: (data: SignupType) => Promise<SignupResponse>;
   verifyEmail: (data: VerifyEmailType) => Promise<boolean>;
-  resendVerifyEmail: () => Promise<boolean>;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (data: ResetPasswordType) => Promise<void>;
   logout: () => void;
   setUser: (user: Partial<User> | null) => void;
   setAuth?: (auth: PersistAuth) => void;
@@ -49,9 +41,9 @@ export const useAuthStore = create<AuthState>()(
       signin: async (data) => {
         set({ isLoading: true, error: null });
         try {
-          console.log(`${API_URL}/auth/signin`);
+          console.log(`/auth/signin`);
 
-          const res = await axios.post<SigninResponse>(
+          const res = await api.post<SigninResponse>(
             `${API_URL}/auth/signin`,
             data
           );
@@ -59,7 +51,7 @@ export const useAuthStore = create<AuthState>()(
           const { token, user } = res.data;
           cookieStorage.setItem("token", token);
 
-          toast.success("Signed in successfully!");
+          // toast.success("Signed in successfully!");
           console.log("Signin successful:", res.data);
 
           set({
@@ -86,10 +78,7 @@ export const useAuthStore = create<AuthState>()(
       signup: async (data) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.post<SignupResponse>(
-            `${API_URL}/auth/signup`,
-            data
-          );
+          const res = await api.post<SignupResponse>(`/auth/signup`, data);
 
           const { user, token } = res.data;
           toast.success("Signup successful! Please verify your email.");
@@ -120,16 +109,7 @@ export const useAuthStore = create<AuthState>()(
       verifyEmail: async (data) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.post(
-            `${API_URL}/auth/verify-email`,
-            data,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
+          const response = await api.post(`/auth/verify-email`, data);
 
           const { message } = response.data;
 
@@ -142,69 +122,6 @@ export const useAuthStore = create<AuthState>()(
           toast.error(errorMessage || "Email verification failed");
           set({ error: errorMessage });
           return false;
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      resendVerifyEmail: async () => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await axios.post(
-            `${API_URL}/auth/resend-verification`,
-            {},
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          toast.success(
-            response.data.message || "Verification email sent successfully!"
-          );
-          console.log("Verification email resent successfully");
-          return true;
-        } catch (error) {
-          const errorMessage = axiosErrorHandler(error);
-          console.error("Resend verification error:", errorMessage);
-          toast.error(errorMessage || "Failed to resend verification email");
-          set({ error: errorMessage });
-          return false;
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      forgotPassword: async (email) => {
-        set({ isLoading: true, error: null });
-        try {
-          await axios.post(`${API_URL}/auth/forgot-password`, { email });
-          toast.success("Password reset link sent to your email.");
-          console.log("Forgot password email sent to:", email);
-        } catch (error) {
-          const errorMessage = axiosErrorHandler(error);
-          console.error("Forgot password error:", errorMessage);
-          toast.error(errorMessage || "Failed to send reset link");
-          set({ error: errorMessage });
-          throw new Error(errorMessage);
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      resetPassword: async (data) => {
-        set({ isLoading: true, error: null });
-        try {
-          await axios.post(`${API_URL}/auth/reset-password`, data);
-          toast.success("Password reset successful. You can now sign in.");
-          console.log("Password reset successful");
-        } catch (error) {
-          const errorMessage = axiosErrorHandler(error);
-          console.error("Password reset error:", errorMessage);
-          toast.error(errorMessage || "Password reset failed");
-          set({ error: errorMessage });
-          throw new Error(errorMessage);
         } finally {
           set({ isLoading: false });
         }
@@ -240,11 +157,7 @@ export const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true });
         try {
-          const res = await axios.get<User>(`${API_URL}/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const res = await api.get<User>(`/auth/me`);
           set({
             user: res.data,
             isAuthenticated: true,
@@ -262,12 +175,12 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "chat-auth",
       storage: createJSONStorage(() => cookieStorage),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.isAuthenticated = !!state.token;
-          console.log("Auth store rehydrated:", state);
-        }
-      },
+      // onRehydrateStorage: () => (state) => {
+      //   if (state) {
+      //     state.isAuthenticated = !!state.token;
+      //     console.log("Auth store rehydrated:", state);
+      //   }
+      // },
       partialize: (state) =>
         ({
           token: state.token,

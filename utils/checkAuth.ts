@@ -4,7 +4,7 @@ import { AuthState } from "@/store/useAuthStore";
 export function checkAuth(req: NextRequest) {
   let authState: AuthState | undefined;
   try {
-    const authStorage = req.cookies.get("auth")?.value;
+    const authStorage = req.cookies.get("chat-auth")?.value;
     console.log("Raw auth value:", authStorage);
     if (authStorage) {
       const decodedAuth = decodeURIComponent(authStorage);

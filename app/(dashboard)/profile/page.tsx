@@ -1,6 +1,5 @@
 "use client";
 import { useState, useRef, useMemo } from "react";
-import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -13,8 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "sonner";
-import { API_URL } from "@/constants";
-import { token } from "@/utils/session";
 import { useGetUserPosts } from "@/lib/queries/usePost";
 import PostList from "@/components/feed/PostList";
 import { useLikedItems } from "@/lib/queries/useLike";
@@ -24,6 +21,8 @@ import UserCover from "@/components/profile/UserCover";
 import UserAvatar from "@/components/profile/UserAvatar";
 import UserInfo from "@/components/profile/UserInfo";
 import { User } from "@/types/user";
+import { Edit3 } from "lucide-react";
+import api from "@/lib/api";
 
 const ProfilePage = () => {
   const user = useAuthStore((state) => state.user);
@@ -71,6 +70,7 @@ const ProfilePage = () => {
     lastName: user?.lastName || "",
     bio: user?.bio || "",
     location: user?.location || "",
+    dateOfBirth: user?.dateOfBirth || new Date(Date.now()),
     // website: user?.website || "",
   });
 
@@ -95,14 +95,14 @@ const ProfilePage = () => {
       setIsLoadingAvatar(true);
 
       // First upload to Cloudinary
-      const cloudinaryResponse = await axios.post(
+      const cloudinaryResponse = await api.post(
         "https://api.cloudinary.com/v1_1/your-cloud-name/image/upload",
         formData
       );
 
       // Then update profile with new avatar URL
       const avatarUrl = cloudinaryResponse.data.secure_url;
-      await axios.put(`${API_URL}/profile/update-avatar`, {
+      await api.put(`/profile/update-avatar`, {
         avatarUrl,
       });
 
@@ -130,14 +130,14 @@ const ProfilePage = () => {
       setIsLoadingCover(true);
 
       // First upload to Cloudinary
-      const cloudinaryResponse = await axios.post(
+      const cloudinaryResponse = await api.post(
         "https://api.cloudinary.com/v1_1/your-cloud-name/image/upload",
         formData
       );
 
       // Then update profile with new cover URL
       const coverUrl = cloudinaryResponse.data.secure_url;
-      await axios.put(`${API_URL}/profile/update-cover`, {
+      await api.put(`/profile/update-cover`, {
         coverUrl,
       });
 
@@ -158,11 +158,7 @@ const ProfilePage = () => {
       setIsLoadingProfile(true);
 
       // Send updated profile data to API
-      await axios.put(`${API_URL}/profile/update`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.put(`/profile/update`, formData);
 
       // Update local state
       updateUser({ ...user, ...formData });
@@ -190,7 +186,6 @@ const ProfilePage = () => {
 
       <div className="px-4">
         {/* Profile Info */}
-
         <div className="relative -mt-16 mb-4 flex justify-between items-end">
           <UserAvatar
             avatar={user?.avatar}
@@ -200,14 +195,13 @@ const ProfilePage = () => {
             onChange={handleAvatarUpload}
             onClick={() => avatarInputRef.current?.click()}
           />
-
-          {/* User Info Section */}
-          <UserInfo
-            user={user as User}
-            onEditClick={() => setIsEditDialogOpen(true)}
-          />
+          <Button className="h-10" onClick={() => setIsEditDialogOpen(true)}>
+            <Edit3 className="h-4 w-4 mr-2" />
+            Edit Profile
+          </Button>
         </div>
-
+        {/* User Info Section */}
+        <UserInfo user={user as User} />
         {/* Tabs */}
         <Tabs defaultValue="posts" className="mt-6">
           <TabsList className="grid grid-cols-4 w-full max-w-md">
@@ -274,7 +268,7 @@ const ProfilePage = () => {
             formData={formData}
             handleInputChange={handleInputChange}
           />
-          ;
+
           <DialogFooter>
             <Button
               variant="outline"

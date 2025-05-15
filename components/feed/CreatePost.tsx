@@ -3,23 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  Image as ImageIcon,
-  MapPin,
-  Smile,
-  X,
-  Tag,
-  Loader2,
-  Send,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Image as ImageIcon, X, Loader2, Send } from "lucide-react";
+
 import { Textarea } from "@/components/ui/textarea";
-import axios from "axios";
-import { API_URL } from "@/constants";
-import { token } from "@/utils/session";
 import Image from "next/image";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 type CreatePostProps = {
   onPostCreated?: () => void;
@@ -33,10 +22,9 @@ const CreatePost: React.FC<CreatePostProps> = ({
   userName = "User",
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState<string>("");
   const [location, setLocation] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<
     { file: File; preview: string }[]
@@ -53,22 +41,7 @@ const CreatePost: React.FC<CreatePostProps> = ({
     setContent("");
     setLocation("");
     setTags([]);
-    setTagInput("");
     setPreviewImages([]);
-  };
-
-  const handleAddTag = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && tagInput.trim()) {
-      e.preventDefault();
-      if (!tags.includes(tagInput.trim())) {
-        setTags([...tags, tagInput.trim()]);
-      }
-      setTagInput("");
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +66,7 @@ const CreatePost: React.FC<CreatePostProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!content.trim()) {
+    if (!previewImages || !content.trim()) {
       toast.error("Post content cannot be empty");
       return;
     }
@@ -111,12 +84,7 @@ const CreatePost: React.FC<CreatePostProps> = ({
         location: location.trim() || undefined,
       };
 
-      const response = await axios.post(`${API_URL}/posts`, postData, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.post(`/posts`, postData);
 
       if (response.status === 201) {
         toast.success("Post created successfully");
@@ -151,6 +119,28 @@ const CreatePost: React.FC<CreatePostProps> = ({
                 onChange={(e) => setContent(e.target.value)}
                 disabled={isSubmitting}
               />
+
+              {/* Moved Add Photo Button */}
+              <div className="mt-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isSubmitting}
+                >
+                  <ImageIcon className="h-4 w-4" /> Add Photo
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileSelect}
+                    disabled={isSubmitting}
+                  />
+                </Button>
+              </div>
             </div>
           ) : (
             <div
@@ -162,157 +152,73 @@ const CreatePost: React.FC<CreatePostProps> = ({
           )}
         </div>
 
-        {isExpanded && (
-          <>
-            {/* Image previews */}
-            {previewImages.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
-                {previewImages.map((img, index) => (
-                  <div
-                    key={index}
-                    className="relative aspect-square rounded-md overflow-hidden bg-muted/50"
-                  >
-                    <Image
-                      src={img.preview}
-                      alt={`Preview ${index}`}
-                      layout="fill"
-                      objectFit="cover"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full"
-                      onClick={() => handleRemoveImage(index)}
-                      disabled={isSubmitting}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Tags input */}
-            <div className="flex flex-wrap items-center gap-2 mt-4">
-              <div className="flex items-center text-muted-foreground text-sm">
-                <Tag className="h-4 w-4 mr-1" /> Add tags:
-              </div>
-
-              {tags.map((tag, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="flex items-center gap-1"
-                >
-                  #{tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-
-              <Input
-                className="flex-1 h-8 min-w-[150px]"
-                placeholder="Type tag and press Enter"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleAddTag}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Location input */}
-            <div className="flex items-center gap-2 mt-4">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <Input
-                className="flex-1"
-                placeholder="Add your location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex justify-between mt-4">
-              <div className="flex gap-2">
+        {/* Image Previews */}
+        {isExpanded && previewImages.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
+            {previewImages.map((img, index) => (
+              <div
+                key={index}
+                className="relative aspect-square rounded-md overflow-hidden bg-muted/50"
+              >
+                <Image
+                  src={img.preview}
+                  alt={`Preview ${index}`}
+                  fill
+                  objectFit="contain"
+                />
                 <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6 rounded-full"
+                  onClick={() => handleRemoveImage(index)}
                   disabled={isSubmitting}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !content.trim()}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Posting...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      Post
-                    </>
-                  )}
+                  <X className="h-3 w-3" />
                 </Button>
               </div>
-            </div>
-          </>
+            ))}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        {isExpanded && (
+          <div className="flex justify-end mt-4 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCancel}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              onClick={handleSubmit}
+              disabled={
+                isSubmitting || (previewImages.length < 1 && !content.trim())
+              }
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Posting...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-1" />
+                  Post
+                </>
+              )}
+            </Button>
+          </div>
         )}
 
         <Separator className="my-4" />
 
-        <div className="flex justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1"
-            onClick={() => {
-              fileInputRef.current?.click();
-              handleExpand();
-            }}
-            disabled={isSubmitting}
-          >
-            <ImageIcon className="h-4 w-4" /> Photos
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              multiple
-              onChange={handleFileSelect}
-              disabled={isSubmitting}
-            />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1"
-            onClick={handleExpand}
-            disabled={isSubmitting}
-          >
-            <Smile className="h-4 w-4" /> Feeling
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1"
-            onClick={handleExpand}
-            disabled={isSubmitting}
-          >
-            <MapPin className="h-4 w-4" /> Check in
-          </Button>
-        </div>
+        {/* Removed the extra buttons here */}
       </CardContent>
     </Card>
   );

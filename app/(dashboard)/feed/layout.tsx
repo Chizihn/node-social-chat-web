@@ -3,9 +3,9 @@
 import { ReactNode } from "react";
 import WhatsNew from "@/components/feed/WhatsNew";
 // import FriendSuggestionComp from "@/components/feed/FriendSuggestion";
-import UpcomingEvents from "@/components/feed/UpcomingEvents";
+// import UpcomingEvents from "@/components/feed/UpcomingEvents";
 // import PeopleYouMayKnow from "@/components/feed/PeopleYouMayKnow";
-import TrendingTopics from "@/components/feed/TrendingTopics";
+// import TrendingTopics from "@/components/feed/TrendingTopics";
 
 interface FeedLayoutProps {
   children: ReactNode;
@@ -22,9 +22,9 @@ export default function FeedLayout({ children }: FeedLayoutProps) {
         <div className="py-6 space-y-4">
           <WhatsNew />
           {/* <FriendSuggestionComp /> */}
-          <UpcomingEvents />
+          {/* <UpcomingEvents /> */}
           {/* <PeopleYouMayKnow /> */}
-          <TrendingTopics />
+          {/* <TrendingTopics /> */}
         </div>
       </div>
     </div>

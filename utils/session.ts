@@ -15,7 +15,7 @@ export const cookieStorage = {
     try {
       Cookies.set(name, value, {
         ...options,
-        expires: 7,
+        expires: 2,
         sameSite: "Lax",
         secure: process.env.NODE_ENV === "production",
         path: "/",

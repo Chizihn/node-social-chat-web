@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,43 +7,32 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search } from "lucide-react";
-
-// Mock users for demonstration
-const mockUsers = [
-  { id: "u1", name: "Alex Johnson", avatar: "/images/user.webp", online: true },
-  {
-    id: "u2",
-    name: "Sarah Williams",
-    avatar: "/images/user.webp",
-    online: false,
-  },
-  {
-    id: "u3",
-    name: "Michael Brown",
-    avatar: "/images/user.webp",
-    online: true,
-  },
-  { id: "u4", name: "Emily Davis", avatar: "/images/user.webp", online: false },
-  { id: "u5", name: "David Wilson", avatar: "/images/user.webp", online: true },
-];
+import { Search, Loader2 } from "lucide-react";
+import { useFriends } from "@/lib/queries/useFriends";
 
 interface NewMessageDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onStartConversation: (userId: string) => void;
+  isLoading?: boolean;
 }
 
 const NewMessageDialog: React.FC<NewMessageDialogProps> = ({
   isOpen,
   onClose,
   onStartConversation,
+  isLoading = false,
 }) => {
+  const { friends, friendsLoading: isFriendsLoading } = useFriends();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredUsers = mockUsers.filter((user) =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = useMemo(() => {
+    return friends?.filter((user) =>
+      `${user.firstName ?? ""} ${user.lastName ?? ""} ${user.username}`
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
+    );
+  }, [friends, searchQuery]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -63,33 +52,57 @@ const NewMessageDialog: React.FC<NewMessageDialogProps> = ({
         </div>
 
         <div className="max-h-[300px] overflow-y-auto">
-          {filteredUsers.length === 0 ? (
+          {isFriendsLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredUsers?.length === 0 ? (
             <p className="text-center py-4 text-muted-foreground">
-              No users found
+              {searchQuery
+                ? `No friends matching "${searchQuery}"`
+                : "No friends found"}
             </p>
           ) : (
             <div className="divide-y">
-              {filteredUsers.map((user) => (
+              {filteredUsers?.map((user) => (
                 <div
                   key={user.id}
                   className="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => onStartConversation(user.id)}
+                  onClick={() => {
+                    if (!isLoading) {
+                      onStartConversation(user.id);
+                    }
+                  }}
                 >
                   <div className="relative">
                     <Avatar>
-                      <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={user.avatar} alt={user.username} />
+                      <AvatarFallback>
+                        {(
+                          user.firstName?.charAt(0) || user.username.charAt(0)
+                        ).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
-                    {user.online && (
+                    {/* Optional: online status indicator */}
+                    {/* {user.online && (
                       <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background"></span>
-                    )}
+                    )} */}
                   </div>
                   <div>
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {user.online ? "Online" : "Offline"}
+                    <p className="font-medium">
+                      {user.firstName || user.lastName
+                        ? `${user.firstName ?? ""} ${
+                            user.lastName ?? ""
+                          }`.trim()
+                        : user.username}
                     </p>
+                    {/* <p className="text-xs text-muted-foreground">
+                      {user.online ? "Online" : "Offline"}
+                    </p> */}
                   </div>
+                  {isLoading && (
+                    <Loader2 className="ml-auto h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
                 </div>
               ))}
             </div>

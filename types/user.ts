@@ -12,7 +12,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   gender?: Gender | null;
-  dateOfBirth?: string;
+  dateOfBirth?: Date;
   location?: string;
   hobbies?: string[];
   interests?: string[];
@@ -28,3 +28,9 @@ export interface User {
 }
 
 export type Users = User[];
+
+export enum UserStatus {
+  ONLINE = "ONLINE",
+  OFFLINE = "OFFLINE",
+  AWAY = "AWAY",
+}

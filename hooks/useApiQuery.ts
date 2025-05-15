@@ -1,5 +1,6 @@
+import api from "@/lib/api";
 import { useQuery, UseQueryOptions, QueryKey } from "@tanstack/react-query";
-import axios, { AxiosError, AxiosRequestConfig } from "axios";
+import { AxiosError, AxiosRequestConfig } from "axios";
 
 type FetchFunction<T> = () => Promise<T>;
 
@@ -25,7 +26,7 @@ export function useApiQuery<TData = unknown, TError = AxiosError>({
   ...options
 }: ApiQueryOptions<TData, TError>) {
   const fetchData: FetchFunction<TData> = async () => {
-    const response = await axios.get<TData>(url, axiosConfig);
+    const response = await api.get<TData>(url, axiosConfig);
     return response.data;
   };
 

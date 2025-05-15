@@ -14,8 +14,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Facebook, Twitter } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -86,7 +84,7 @@ export default function SigninPage() {
                 required
               />
             </div>
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2">
               <Checkbox id="remember" />
               <Label
                 htmlFor="remember"
@@ -94,13 +92,13 @@ export default function SigninPage() {
               >
                 Remember me
               </Label>
-            </div>
+            </div> */}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
 
-          <div className="relative">
+          {/* <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>
@@ -119,7 +117,7 @@ export default function SigninPage() {
               <Twitter className="mr-2 h-4 w-4" />
               Twitter
             </Button>
-          </div>
+          </div> */}
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-600">

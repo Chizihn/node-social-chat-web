@@ -18,7 +18,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation"; // For page redirection
 import { useAuthStore } from "@/store/useAuthStore";
-import { Facebook, Twitter } from "lucide-react";
 
 export default function CreateAccountPage() {
   const [username, setUsername] = useState(""); // State for the username field
@@ -122,7 +121,7 @@ export default function CreateAccountPage() {
               {isLoading ? "Creating account..." : "Create account"}
             </Button>
           </form>
-          <div className="relative">
+          {/* <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>
@@ -141,7 +140,7 @@ export default function CreateAccountPage() {
               <Twitter className="mr-2 h-4 w-4" />
               Twitter
             </Button>
-          </div>
+          </div> */}
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-600">

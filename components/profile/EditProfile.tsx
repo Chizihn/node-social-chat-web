@@ -9,6 +9,7 @@ type EditProfileFormProps = {
     lastName: string;
     bio: string;
     location: string;
+    dateOfBirth: Date;
     // website?: string;
   };
   handleInputChange: (
@@ -23,7 +24,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
   return (
     <div className="grid gap-4 py-4">
       <div className="grid grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
 
           <Input
@@ -33,7 +34,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
             onChange={handleInputChange}
           />
         </div>
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="lastName">Last Name</Label>
           <Input
             id="lastName"
@@ -44,7 +45,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
         </div>
       </div>
 
-      <div>
+      <div className="space-y-2">
         <Label htmlFor="bio">Bio</Label>
         <Textarea
           id="bio"
@@ -55,12 +56,23 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
         />
       </div>
 
-      <div>
+      <div className="space-y-2">
         <Label htmlFor="location">Location</Label>
         <Input
           id="location"
           name="location"
           value={formData.location}
+          onChange={handleInputChange}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="dob">Date of Birth</Label>
+        <Input
+          id="dob"
+          name="dateOfBirth"
+          type="date"
+          value={new Date(formData.dateOfBirth).toLocaleDateString()}
           onChange={handleInputChange}
         />
       </div>

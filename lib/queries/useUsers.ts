@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-import { API_URL } from "@/constants";
-import { token } from "@/utils/session";
 import { axiosErrorHandler } from "@/utils/error";
 import { User, Users } from "@/types/user";
+import api from "../api";
 
 export const useUsers = (options = {}) => {
   const {
@@ -16,12 +14,7 @@ export const useUsers = (options = {}) => {
     queryKey: ["users"], // Define the query key
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/users`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // Use token for authentication
-          },
-        });
+        const response = await api.get(`/users`);
 
         if (response.status !== 200) {
           throw new Error("Failed to fetch users");
@@ -63,12 +56,7 @@ export const useUser = (userId: string, options = {}) => {
     queryKey: ["user", userId], // Unique key for this query
     queryFn: async () => {
       try {
-        const response = await axios.get(`${API_URL}/users/id/${userId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // Use token for authentication
-          },
-        });
+        const response = await api.get(`/users/id/${userId}`);
 
         if (response.status !== 200) {
           throw new Error("Failed to fetch user");
@@ -108,15 +96,7 @@ export const useUserByUsername = (username: string, options = {}) => {
     queryKey: ["user", username], // Unique key for this query
     queryFn: async () => {
       try {
-        const response = await axios.get(
-          `${API_URL}/users/username/${username}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`, // Use token for authentication
-            },
-          }
-        );
+        const response = await api.get(`/users/username/${username}`);
 
         if (response.status !== 200) {
           throw new Error("Failed to fetch user");

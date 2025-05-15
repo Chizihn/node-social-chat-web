@@ -8,37 +8,49 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, MoreVertical, Phone, Video, Info } from "lucide-react";
+import { ArrowLeft, MoreVertical, Info } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Link from "next/link";
+import { User } from "@/types/user";
 
 interface ChatHeaderProps {
-  name: string;
-  avatar: string;
-  online: boolean;
-  lastSeen: string;
+  recipient: Partial<User> | null;
+  // online: boolean;
+  // lastSeen: string;
   onBack: () => void;
   onInfoClick: () => void;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
-  name,
-  avatar,
-  online,
-  lastSeen,
+  recipient,
+  // online,
+  // lastSeen,
   onBack,
   onInfoClick,
 }) => {
+  const fullName = recipient
+    ? `${recipient?.firstName ?? ""} ${recipient?.lastName ?? ""}`.trim()
+    : "Unknown User";
+
+  const initials = recipient
+    ? `${recipient.firstName?.[0] ?? ""}${
+        recipient.lastName?.[0] ?? ""
+      }`.toUpperCase()
+    : "??";
+
+  const avatar = recipient?.avatar ?? undefined;
+
   return (
     <div className="p-3 border-b flex items-center gap-3 sticky top-0 bg-background z-10">
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden rounded-full"
+        className="rounded-full"
         onClick={onBack}
         aria-label="Go back"
       >
@@ -47,24 +59,29 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 
       <div className="flex items-center gap-3 flex-1">
         <div className="relative">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={avatar} alt={name} />
-            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+          <Avatar className="h-12 w-12">
+            <AvatarImage src={avatar} alt={fullName} />
+            <AvatarFallback className="bg-blue-100 text-blue-600">
+              {" "}
+              {initials}
+            </AvatarFallback>
           </Avatar>
-          {online && (
+          {/* {online && (
             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background"></span>
-          )}
+          )} */}
         </div>
         <div>
-          <h2 className="font-medium">{name}</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className="font-medium">
+            {recipient?.firstName} {recipient?.lastName}
+          </h2>
+          {/* <p className="text-xs text-muted-foreground">
             {online ? "Online" : `Last seen ${lastSeen}`}
-          </p>
+          </p> */}
         </div>
       </div>
 
       <div className="flex items-center gap-1">
-        <TooltipProvider>
+        {/* <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -78,9 +95,9 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
             </TooltipTrigger>
             <TooltipContent>Voice call</TooltipContent>
           </Tooltip>
-        </TooltipProvider>
+        </TooltipProvider> */}
 
-        <TooltipProvider>
+        {/* <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -94,7 +111,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
             </TooltipTrigger>
             <TooltipContent>Video call</TooltipContent>
           </Tooltip>
-        </TooltipProvider>
+        </TooltipProvider> */}
 
         <TooltipProvider>
           <Tooltip>
@@ -125,9 +142,11 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>View profile</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/${recipient?.username}`}>View profile</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>Search in conversation</DropdownMenuItem>
-            <DropdownMenuItem>Mute notifications</DropdownMenuItem>
+            {/* <DropdownMenuItem>Mute notifications</DropdownMenuItem> */}
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-red-500">
               Block user

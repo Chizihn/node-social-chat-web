@@ -1,11 +1,9 @@
-import { API_URL } from "@/constants";
 import { axiosErrorHandler } from "@/utils/error";
-import { token } from "@/utils/session";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import api from "../api";
 
 type LikedItem = {
-  _id: string;
+  id: string;
   type: "Post" | "Comment";
   likedAt: string;
   targetId: string;
@@ -40,12 +38,7 @@ export const useLikedItems = (
         ).toString();
 
         try {
-          const response = await axios.get(`${API_URL}/likes?${queryString}`, {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const response = await api.get(`/likes?${queryString}`);
 
           return response.data as LikedItemsResponse;
         } catch (error) {
