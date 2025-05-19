@@ -4,11 +4,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Image as ImageIcon, X, Loader2, Send } from "lucide-react";
-
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { useCloudinaryUpload } from "@/hooks/useCloudinaryUpload";
 
 type CreatePostProps = {
   onPostCreated?: () => void;
@@ -65,8 +65,14 @@ const CreatePost: React.FC<CreatePostProps> = ({
     setPreviewImages(newPreviews);
   };
 
+  const { uploadFiles, uploadState } = useCloudinaryUpload({
+    maxSizeMB: 10,
+    allowedTypes: ["image/*", "video/*"],
+    maxFiles: 10,
+  });
+
   const handleSubmit = async () => {
-    if (!previewImages || !content.trim()) {
+    if (!previewImages.length && !content.trim()) {
       toast.error("Post content cannot be empty");
       return;
     }
@@ -74,13 +80,22 @@ const CreatePost: React.FC<CreatePostProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Use the preview image URLs for the media
-      const uploadedMedia = previewImages.map((img) => img.preview);
+      let uploadedMediaUrls: string[] = [];
 
+      // Upload images first if there are any
+      if (previewImages.length > 0) {
+        const files = previewImages.map((preview) => preview.file);
+        const uploadResults = await uploadFiles(files);
+        uploadedMediaUrls = uploadResults.map((result) => result.url);
+      }
+
+      const postContent = content || "";
+
+      // Create the post with the uploaded media URLs
       const postData = {
-        content,
+        content: postContent,
         tags,
-        media: uploadedMedia,
+        media: uploadedMediaUrls,
         location: location.trim() || undefined,
       };
 
@@ -94,8 +109,10 @@ const CreatePost: React.FC<CreatePostProps> = ({
         }
       }
     } catch (error) {
-      console.error("Error creating post:", error);
-      toast.error("Failed to create post. Please try again.");
+      console.trace("Error creating post:", error);
+      toast.error(
+        uploadState.error || "Failed to create post. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -164,7 +181,7 @@ const CreatePost: React.FC<CreatePostProps> = ({
                   src={img.preview}
                   alt={`Preview ${index}`}
                   fill
-                  objectFit="contain"
+                  style={{ objectFit: "contain" }}
                 />
                 <Button
                   variant="destructive"
@@ -225,3 +242,5 @@ const CreatePost: React.FC<CreatePostProps> = ({
 };
 
 export default CreatePost;
+
+// go thorugh mywhole post flow api and the frontend post particularly creaetig post. the whole media uploadingflowis verybad i keep getting internal server error check th epost service, post controller, post route, multer , cloudinary with its service, check the createpost component. fix everythign make sure creating post with media works

@@ -49,21 +49,6 @@ api.interceptors.response.use(
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem("auth");
       }
-
-      // Handle logout in a safe way
-      if (typeof window !== "undefined") {
-        // Use dynamic import to avoid server-side issues
-        import("@/store/useAuthStore")
-          .then(({ useAuthStore }) => {
-            useAuthStore.getState().logout();
-            // Use client-side navigation instead of redirect
-            window.location.href = "/login";
-          })
-          .catch(() => {
-            // If store import fails, just redirect
-            window.location.href = "/login";
-          });
-      }
     }
 
     return Promise.reject(error);

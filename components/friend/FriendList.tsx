@@ -6,6 +6,7 @@ interface FriendListProps {
   friends: Users;
   loading: boolean;
   error: string | null;
+  hasSearched?: boolean;
 }
 
 const FriendList: React.FC<FriendListProps> = ({ friends, loading, error }) => {

@@ -1,7 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+// lib/quereies/useUsers
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { axiosErrorHandler } from "@/utils/error";
 import { User, Users } from "@/types/user";
 import api from "../api";
+import { useState } from "react";
+import axios from "axios";
+import { queryClient } from "../queryClient";
 
 export const useUsers = (options = {}) => {
   const {
@@ -124,5 +128,119 @@ export const useUserByUsername = (username: string, options = {}) => {
     error, // The error, if any
     refetch, // Function to refetch the user
     isFetching, // Whether the query is currently fetching
+  };
+};
+
+// export const useBlockedUsers = (
+//   userId: string,
+//   page = 1,
+//   limit = 10,
+//   options = {}
+// ) => {
+//   return useQuery<string[]>({
+//     queryKey: ["blockedUsers", userId, page, limit],
+//     queryFn: async () => {
+//       try {
+//         const response = await api.get(`/users/blocked`, {
+//           params: { userId, page, limit },
+//         });
+
+//         if (response.status !== 200) {
+//           throw new Error("Failed to fetch blocked users");
+//         }
+
+//         return response.data; // Assuming response.data is the blocked user list
+//       } catch (error) {
+//         const err = axiosErrorHandler(error);
+//         throw new Error(err || "Failed to fetch blocked users");
+//       }
+//     },
+//     staleTime: 5 * 60 * 1000,
+//     refetchOnWindowFocus: false,
+//     refetchOnMount: false,
+//     retry: 2,
+//     ...options,
+//   });
+// };
+
+export const useBlockUser = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const blockUserMutation = useMutation({
+    mutationFn: async (targetId: string) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await api.post(`/users/${targetId}/block`);
+        return response.data;
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response) {
+          throw new Error(err.response.data.error || "Failed to block user");
+        }
+        throw new Error("Failed to block user");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
+    },
+    onError: (error: Error) => {
+      setError(error.message);
+    },
+  });
+
+  const blockUser = async (targetId: string) => {
+    return blockUserMutation.mutateAsync(targetId);
+  };
+
+  return {
+    blockUser,
+    isLoading: isLoading || blockUserMutation.isPending,
+    error,
+    isSuccess: blockUserMutation.isSuccess,
+  };
+};
+
+export const useUnblockUser = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const unblockUserMutation = useMutation({
+    mutationFn: async (targetId: string) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await api.post(`/users/${targetId}/unblock`);
+        return response.data;
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response) {
+          throw new Error(err.response.data.error || "Failed to unblock user");
+        }
+        throw new Error("Failed to unblock user");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (error: Error) => {
+      setError(error.message);
+    },
+  });
+
+  const unblockUser = async (targetId: string) => {
+    return unblockUserMutation.mutateAsync(targetId);
+  };
+
+  return {
+    unblockUser,
+    isLoading: isLoading || unblockUserMutation.isPending,
+    error,
+    isSuccess: unblockUserMutation.isSuccess,
   };
 };

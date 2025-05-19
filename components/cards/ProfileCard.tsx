@@ -18,6 +18,9 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { User } from "@/types/user";
+import { useCloudinaryUpload } from "@/hooks/useCloudinaryUpload";
+import { toast } from "sonner";
+import api from "@/lib/api";
 
 interface ProfileCardProps {
   user: Partial<User>;
@@ -50,21 +53,42 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     user?.id as string
   );
 
-  const handleAvatarUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const { uploadFile: uploadToCloudinary } = useCloudinaryUpload({
+    maxSizeMB: 5,
+    allowedTypes: ["image/*"],
+    maxFiles: 1,
+  });
+
+  const handleAvatarUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
 
     setIsLoadingAvatar(true);
-    // Here you'd implement your avatar upload functionality
-    // For example: uploadAvatarToStorage(e.target.files[0], currentUser.id)
-    setTimeout(() => setIsLoadingAvatar(false), 1500); // Mock upload delay
+    try {
+      const result = await uploadToCloudinary(e.target.files[0]);
+      await api.post(`/profile/upload-avatar`, { avatar: result.url });
+      toast.success("Profile picture updated successfully");
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      toast.error("Failed to update profile picture");
+    } finally {
+      setIsLoadingAvatar(false);
+    }
   };
 
-  const handleCoverUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleCoverUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
 
     setIsLoadingCover(true);
-    // Here you'd implement your cover image upload functionality
-    setTimeout(() => setIsLoadingCover(false), 1500); // Mock upload delay
+    try {
+      const result = await uploadToCloudinary(e.target.files[0]);
+      await api.post(`/profile/upload-cover`, { coverImage: result.url });
+      toast.success("Cover photo updated successfully");
+    } catch (error) {
+      console.error("Error uploading cover photo:", error);
+      toast.error("Failed to update cover photo");
+    } finally {
+      setIsLoadingCover(false);
+    }
   };
 
   return (
@@ -85,7 +109,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              className="absolute right-4 bottom-4 bg-black/40 hover:bg-black/60 text-white rounded-full"
+              className="absolute right-4 bottom-4 bg-black/40 hover:bg-black/60 text-white rounded-full z-20"
               onClick={() => coverInputRef.current?.click()}
               disabled={isLoadingCover}
             >

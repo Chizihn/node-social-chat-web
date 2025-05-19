@@ -99,7 +99,7 @@ export interface Message {
   sender: Partial<User>;
   text: string;
   status: MessageStatus;
-  attachments?: Attachment[];
+  attachments?: string[];
   timestamp: Date;
   createdAt: Date;
   updatedAt: Date;

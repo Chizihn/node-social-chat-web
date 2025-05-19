@@ -34,7 +34,6 @@ export default function SigninPage() {
       toast.success("Welcome back!");
       router.push("/feed");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
       console.error("Signin error:", err);
     } finally {
       setIsLoading(false);

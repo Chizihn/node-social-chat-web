@@ -1,82 +1,102 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import {
-  Camera,
-  Globe,
-  Lock,
-  Shield,
-  UserCog,
-  Bell,
-  UserPlus,
-  Database,
-} from "lucide-react";
-import Image from "next/image";
 
-const SettingsPage = () => {
-  const [formData, setFormData] = useState({
-    name: "User Name",
-    username: "username",
-    email: "user@example.com",
-    bio: "Product Designer, Photographer, and Creative Director. Always exploring new ideas and pushing boundaries.",
-    website: "username.com",
-    location: "San Francisco, CA",
-    dateOfBirth: "1990-08-15",
-  });
+import { Lock, UserX } from "lucide-react";
+import { useBlockedUsers } from "@/lib/queries/useBlockedUsers";
+import { useUnblockUser, useUsers } from "@/lib/queries/useUsers";
+import { toast } from "sonner";
+import { User } from "@/types/user";
+import { axiosErrorHandler } from "@/utils/error";
 
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+const BlockedUsers = () => {
+  const { users, isLoading: usersLoading } = useUsers();
+  const { blockedUsersIds, isLoading } = useBlockedUsers();
+  const { unblockUser, isLoading: isUnblocking } = useUnblockUser();
+
+  const blockedUsers = users?.filter((user) =>
+    blockedUsersIds?.includes(user?.id as string)
+  );
+
+  const handleUnblock = async (userId: string) => {
+    try {
+      await unblockUser(userId);
+      toast.success("User unblocked successfully");
+    } catch (error) {
+      const errMsg = axiosErrorHandler(error);
+      toast.error(errMsg || "Failed to unblock user");
+    }
   };
 
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">Blocked Users</h3>
+      {isLoading || usersLoading ? (
+        <p className="text-sm text-muted-foreground">
+          Loading blocked users...
+        </p>
+      ) : blockedUsers && blockedUsers.length > 0 ? (
+        <div className="space-y-4">
+          {blockedUsers.map((user: User) => (
+            <div key={user.id} className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Avatar>
+                  <AvatarImage src={user.avatar || ""} />
+                  <AvatarFallback>{user.username?.[0]}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{user.username}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {user.firstName} {user.lastName}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleUnblock(user.id)}
+                disabled={isUnblocking}
+              >
+                <UserX className="h-4 w-4 mr-2" />
+                Unblock
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">No blocked users</p>
+      )}
+    </div>
+  );
+};
+
+const SettingsPage = () => {
   return (
     <div className="p-4">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
-      <Tabs defaultValue="account" className="w-full">
+      <Tabs defaultValue="privacy" className="w-full">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Sidebar */}
           <div className="w-full md:w-64 flex-shrink-0">
             <TabsList className="flex flex-col h-auto w-full bg-background border rounded-lg p-2 gap-1">
-              <TabsTrigger
+              {/* <TabsTrigger
                 value="account"
                 className="w-full justify-start gap-3 p-3"
               >
                 <UserCog className="h-4 w-4" />
                 Account
-              </TabsTrigger>
-              <TabsTrigger
+              </TabsTrigger> */}
+              {/* <TabsTrigger
                 value="profile"
                 className="w-full justify-start gap-3 p-3"
               >
                 <UserPlus className="h-4 w-4" />
                 Profile
-              </TabsTrigger>
+              </TabsTrigger> */}
               <TabsTrigger
                 value="privacy"
                 className="w-full justify-start gap-3 p-3"
@@ -84,7 +104,7 @@ const SettingsPage = () => {
                 <Lock className="h-4 w-4" />
                 Privacy
               </TabsTrigger>
-              <TabsTrigger
+              {/* <TabsTrigger
                 value="notifications"
                 className="w-full justify-start gap-3 p-3"
               >
@@ -104,7 +124,7 @@ const SettingsPage = () => {
               >
                 <Database className="h-4 w-4" />
                 Data
-              </TabsTrigger>
+              </TabsTrigger> */}
             </TabsList>
 
             {/* <div className="mt-6">
@@ -120,7 +140,7 @@ const SettingsPage = () => {
 
           {/* Content */}
           <div className="flex-1">
-            <TabsContent value="account" className="mt-0">
+            {/* <TabsContent value="account" className="mt-0">
               <Card>
                 <CardHeader>
                   <CardTitle>Account Settings</CardTitle>
@@ -229,9 +249,9 @@ const SettingsPage = () => {
                   <Button>Save Changes</Button>
                 </CardFooter>
               </Card>
-            </TabsContent>
+            </TabsContent> */}
 
-            <TabsContent value="profile" className="mt-0">
+            {/* <TabsContent value="profile" className="mt-0">
               <Card>
                 <CardHeader>
                   <CardTitle>Profile Information</CardTitle>
@@ -361,22 +381,22 @@ const SettingsPage = () => {
                   <Button>Save Changes</Button>
                 </CardFooter>
               </Card>
-            </TabsContent>
+            </TabsContent> */}
 
             <TabsContent value="privacy" className="mt-0">
               <Card>
                 <CardHeader>
                   <CardTitle>Privacy Settings</CardTitle>
-                  <CardDescription>
+                  {/* <CardDescription>
                     Control who can see your content and how your information is
                     used
-                  </CardDescription>
+                  </CardDescription> */}
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Account Privacy</h3>
+                    {/* <h3 className="text-lg font-semibold">Account Privacy</h3> */}
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
+                      {/* <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">Private Account</p>
                           <p className="text-sm text-muted-foreground">
@@ -384,8 +404,9 @@ const SettingsPage = () => {
                           </p>
                         </div>
                         <Switch />
-                      </div>
-                      <div className="flex items-center justify-between">
+                      </div> */}
+                      <BlockedUsers />
+                      {/* <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">Activity Status</p>
                           <p className="text-sm text-muted-foreground">
@@ -393,13 +414,13 @@ const SettingsPage = () => {
                           </p>
                         </div>
                         <Switch defaultChecked />
-                      </div>
+                      </div> */}
                     </div>
                   </div>
 
-                  <Separator />
+                  {/* <Separator /> */}
 
-                  <div className="space-y-4">
+                  {/* <div className="space-y-4">
                     <h3 className="text-lg font-semibold">
                       Content Visibility
                     </h3>
@@ -456,11 +477,11 @@ const SettingsPage = () => {
                         </Select>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
-                  <Separator />
+                  {/* <Separator /> */}
 
-                  <div className="space-y-4">
+                  {/* <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Messages & Tags</h3>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -493,16 +514,16 @@ const SettingsPage = () => {
                         </Select>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                 </CardContent>
-                <CardFooter className="flex justify-end gap-2">
+                {/* <CardFooter className="flex justify-end gap-2">
                   <Button variant="outline">Cancel</Button>
                   <Button>Save Changes</Button>
-                </CardFooter>
+                </CardFooter> */}
               </Card>
             </TabsContent>
 
-            <TabsContent value="notifications" className="mt-0">
+            {/* <TabsContent value="notifications" className="mt-0">
               <Card>
                 <CardHeader>
                   <CardTitle>Notification Preferences</CardTitle>
@@ -636,9 +657,9 @@ const SettingsPage = () => {
                   <Button>Save Changes</Button>
                 </CardFooter>
               </Card>
-            </TabsContent>
+            </TabsContent> */}
 
-            <TabsContent value="security" className="mt-0">
+            {/* <TabsContent value="security" className="mt-0">
               <Card>
                 <CardHeader>
                   <CardTitle>Security Settings</CardTitle>
@@ -745,9 +766,9 @@ const SettingsPage = () => {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </TabsContent> */}
 
-            <TabsContent value="data" className="mt-0">
+            {/* <TabsContent value="data" className="mt-0">
               <Card>
                 <CardHeader>
                   <CardTitle>Data & Privacy</CardTitle>
@@ -851,7 +872,7 @@ const SettingsPage = () => {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </TabsContent> */}
           </div>
         </div>
       </Tabs>

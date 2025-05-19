@@ -3,7 +3,28 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, CheckCheck } from "lucide-react";
-import { Attachment, Message, MessageStatus } from "@/types/message";
+import { Message, MessageStatus } from "@/types/message";
+
+// Helpers
+const getMediaType = (
+  url: string
+): "image" | "video" | "document" | "link" | "other" => {
+  const lower = url.toLowerCase();
+  if (/\.(jpeg|jpg|png|gif|webp|svg|avif)(\?.*)?$/.test(lower)) return "image";
+  if (/\.(mp4|webm|mov|avi|mkv)(\?.*)?$/.test(lower)) return "video";
+  if (/\.(pdf|docx?|xlsx?|pptx?|txt)(\?.*)?$/.test(lower)) return "document";
+  if (/^https?:\/\//.test(lower)) return "link";
+  return "other";
+};
+
+const getFilenameFromUrl = (url: string): string => {
+  try {
+    const u = new URL(url);
+    return u.pathname.split("/").pop()?.split("?")[0] || "file";
+  } catch {
+    return url.split("/").pop()?.split("?")[0] || "file";
+  }
+};
 
 interface MessageListProps {
   messages: Message[];
@@ -54,13 +75,16 @@ const MessageList: React.FC<MessageListProps> = ({
     }
   };
 
-  const renderAttachment = (attachment: Attachment) => {
-    if (attachment.type.startsWith("image/")) {
+  const renderAttachment = (url: string) => {
+    const type = getMediaType(url);
+    const filename = getFilenameFromUrl(url);
+
+    if (type === "image") {
       return (
         <div className="rounded-md overflow-hidden max-w-xs mt-2">
           <Image
-            src={attachment.url}
-            alt={attachment.name}
+            src={url}
+            alt={filename}
             width={300}
             height={300}
             className="object-cover w-full h-auto rounded-md"
@@ -70,7 +94,12 @@ const MessageList: React.FC<MessageListProps> = ({
     }
 
     return (
-      <div className="bg-accent rounded-md p-3 flex items-center gap-2 max-w-xs mt-2">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="bg-accent rounded-md p-3 flex items-center gap-2 max-w-xs mt-2"
+      >
         <div className="bg-primary/10 p-2 rounded">
           <svg
             className="h-6 w-6 text-primary"
@@ -87,10 +116,12 @@ const MessageList: React.FC<MessageListProps> = ({
           </svg>
         </div>
         <div className="overflow-hidden">
-          <p className="text-sm font-medium truncate">{attachment.name}</p>
-          <p className="text-xs text-muted-foreground">Click to download</p>
+          <p className="text-sm font-medium truncate">{filename}</p>
+          <p className="text-xs text-muted-foreground">
+            Click to view or download
+          </p>
         </div>
-      </div>
+      </a>
     );
   };
 
@@ -135,7 +166,9 @@ const MessageList: React.FC<MessageListProps> = ({
                   )}
                 >
                   {group[0].text}
-                  {group[0].attachments?.map((att) => renderAttachment(att))}
+                  {group[0].attachments?.map((url, idx) => (
+                    <div key={idx}>{renderAttachment(url)}</div>
+                  ))}
                 </div>
                 <div
                   className={cn(
@@ -171,7 +204,9 @@ const MessageList: React.FC<MessageListProps> = ({
                     )}
                   >
                     {msg.text}
-                    {msg.attachments?.map((att) => renderAttachment(att))}
+                    {msg.attachments?.map((url, idx) => (
+                      <div key={idx}>{renderAttachment(url)}</div>
+                    ))}
                   </div>
                   <div
                     className={cn(

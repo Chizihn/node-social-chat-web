@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
 import { token } from "@/utils/session";
-import { Attachment } from "@/types/message";
 
 interface SocketState {
   socket: Socket | null;
@@ -14,7 +13,7 @@ interface SocketState {
   sendMessage: (
     recipientId: string,
     text: string,
-    attachments?: Attachment[]
+    attachments?: string[]
   ) => boolean;
   markAsRead: (conversationId: string, senderId: string) => void;
   markNotificationAsRead: (notificationId: string) => void;
@@ -109,9 +108,6 @@ export const useSocketStore = create<SocketState>((set, get) => {
     socket.on("new_message", (message) => {
       // Log the message for debugging
       console.log("New message received in socket store:", message);
-
-      // The event will be handled by components that are listening for it
-      // We don't need to do anything here as the chat page is listening for this event
     });
 
     socket.on("message_status", ({ messageId, status }) => {
@@ -191,7 +187,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
   const sendMessage = (
     recipientId: string,
     text: string,
-    attachments: Attachment[] = []
+    attachments: string[] = []
   ) => {
     const currentSocket = get().socket;
     if (currentSocket && get().isConnected) {

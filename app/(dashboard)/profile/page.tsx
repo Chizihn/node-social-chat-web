@@ -23,24 +23,17 @@ import UserInfo from "@/components/profile/UserInfo";
 import { User } from "@/types/user";
 import { Edit3 } from "lucide-react";
 import api from "@/lib/api";
+import { useTogglePrivacy } from "@/lib/queries/useProfile";
+import { useCloudinaryUpload } from "@/hooks/useCloudinaryUpload";
 
 const ProfilePage = () => {
   const user = useAuthStore((state) => state.user);
-  const {
-    posts,
-    isLoading,
-    error,
-    // refetch,
-    currentPage,
-    totalPages,
-    handlePageChange,
-  } = useGetUserPosts(user?.username as string);
+  const { posts, isLoading, error, currentPage, totalPages, handlePageChange } =
+    useGetUserPosts(user?.username as string);
 
-  const {
-    likedItems,
-    // isLoading: fetchingLikes,
-    // error: likedError,
-  } = useLikedItems({ type: "Post" });
+  const { togglePrivacy, isLoading: isTogglingPrivacy } = useTogglePrivacy();
+
+  const { likedItems } = useLikedItems({ type: "Post" });
 
   // Extract liked post IDs as a Set for fast lookup
   const likedPostIds = useMemo(
@@ -56,9 +49,22 @@ const ProfilePage = () => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
+  // Initialize Cloudinary upload hooks for avatar and cover image
+  const { uploadFile: uploadAvatar, uploadState: avatarUploadState } =
+    useCloudinaryUpload({
+      maxSizeMB: 5,
+      allowedTypes: ["image/*"],
+      maxFiles: 1,
+    });
+
+  const { uploadFile: uploadCover, uploadState: coverUploadState } =
+    useCloudinaryUpload({
+      maxSizeMB: 10,
+      allowedTypes: ["image/*"],
+      maxFiles: 1,
+    });
+
   // Loading states
-  const [isLoadingAvatar, setIsLoadingAvatar] = useState(false);
-  const [isLoadingCover, setIsLoadingCover] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   // Edit profile dialog state
@@ -71,7 +77,7 @@ const ProfilePage = () => {
     bio: user?.bio || "",
     location: user?.location || "",
     dateOfBirth: user?.dateOfBirth || new Date(Date.now()),
-    // website: user?.website || "",
+    isPrivate: user?.isPrivate || false,
   });
 
   // Handle input change for profile edit form
@@ -82,73 +88,65 @@ const ProfilePage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle avatar upload
+  // Handle avatar upload using Cloudinary
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "user_avatars"); // Configure this in your Cloudinary dashboard
 
     try {
-      setIsLoadingAvatar(true);
+      // Upload to Cloudinary
+      const result = await uploadAvatar(file);
 
-      // First upload to Cloudinary
-      const cloudinaryResponse = await api.post(
-        "https://api.cloudinary.com/v1_1/your-cloud-name/image/upload",
-        formData
-      );
-
-      // Then update profile with new avatar URL
-      const avatarUrl = cloudinaryResponse.data.secure_url;
-      await api.put(`/profile/update-avatar`, {
-        avatarUrl,
+      // Update avatar in the backend
+      await api.put("/profile/update", {
+        avatar: result.url,
       });
 
-      // Update local state
-      updateUser({ ...user, avatar: avatarUrl });
+      // Update local state with the returned avatar URL
+      updateUser({ ...user, avatar: result.url });
       toast.success("Profile picture updated successfully");
     } catch (error) {
       console.error("Avatar upload error:", error);
-      toast.error("Failed to update profile picture");
-    } finally {
-      setIsLoadingAvatar(false);
+      toast.error(
+        avatarUploadState.error || "Failed to update profile picture"
+      );
     }
   };
 
-  // Handle cover image upload
+  // Handle cover image upload using Cloudinary
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "cover_images"); // Configure this in your Cloudinary dashboard
 
     try {
-      setIsLoadingCover(true);
+      // Upload to Cloudinary
+      const result = await uploadCover(file);
 
-      // First upload to Cloudinary
-      const cloudinaryResponse = await api.post(
-        "https://api.cloudinary.com/v1_1/your-cloud-name/image/upload",
-        formData
-      );
-
-      // Then update profile with new cover URL
-      const coverUrl = cloudinaryResponse.data.secure_url;
-      await api.put(`/profile/update-cover`, {
-        coverUrl,
+      // Update cover image in the backend
+      await api.put("/profile/update", {
+        coverImage: result.url,
       });
 
-      // Update local state
-      updateUser({ ...user, coverImage: coverUrl });
+      // Update local state with the returned cover URL
+      updateUser({ ...user, coverImage: result.url });
       toast.success("Cover image updated successfully");
     } catch (error) {
       console.error("Cover upload error:", error);
-      toast.error("Failed to update cover image");
-    } finally {
-      setIsLoadingCover(false);
+      toast.error(coverUploadState.error || "Failed to update cover image");
+    }
+  };
+
+  // Handle privacy toggle
+  const handlePrivacyToggle = async () => {
+    try {
+      await togglePrivacy();
+      toast.success("Privacy settings updated successfully");
+    } catch (error) {
+      toast.error(
+        (error as Error).message || "Failed to update privacy settings"
+      );
     }
   };
 
@@ -158,10 +156,11 @@ const ProfilePage = () => {
       setIsLoadingProfile(true);
 
       // Send updated profile data to API
-      await api.put(`/profile/update`, formData);
+      const { ...profileData } = formData;
+      await api.put(`/profile/update`, profileData);
 
       // Update local state
-      updateUser({ ...user, ...formData });
+      updateUser({ ...user, ...profileData });
 
       setIsEditDialogOpen(false);
       toast.success("Profile updated successfully");
@@ -178,7 +177,7 @@ const ProfilePage = () => {
       {/* Cover Photo */}
       <UserCover
         coverImage={user?.coverImage}
-        isLoading={isLoadingCover}
+        isLoading={coverUploadState.isUploading}
         onClick={() => coverInputRef.current?.click()}
         inputRef={coverInputRef}
         onChange={handleCoverUpload}
@@ -190,7 +189,7 @@ const ProfilePage = () => {
           <UserAvatar
             avatar={user?.avatar}
             username={user?.username}
-            isLoading={isLoadingAvatar}
+            isLoading={avatarUploadState.isUploading}
             inputRef={avatarInputRef}
             onChange={handleAvatarUpload}
             onClick={() => avatarInputRef.current?.click()}
@@ -267,6 +266,8 @@ const ProfilePage = () => {
           <EditProfileForm
             formData={formData}
             handleInputChange={handleInputChange}
+            onPrivacyToggle={handlePrivacyToggle}
+            disabled={isTogglingPrivacy}
           />
 
           <DialogFooter>

@@ -6,17 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Separator } from "@/components/ui/separator";
 import FriendRequestList from "@/components/friend/FriendRequestList";
-import {
-  useFindFriends,
-  useFriendRequests,
-  useFriends,
-} from "@/lib/queries/useFriends";
+import { useFriendRequests } from "@/lib/queries/useFriends";
+import { useSearch, useFriendSearch } from "@/lib/queries/useSearch";
 import FriendList from "@/components/friend/FriendList";
 import { Friends } from "@/types/friend";
 import FindFriendList from "@/components/friend/FindFriendList";
-import { User, Users } from "@/types/user";
+import { Users } from "@/types/user";
 
 // Import sources with icons
 // const importSources = [
@@ -29,35 +27,30 @@ import { User, Users } from "@/types/user";
 // Main Friends Page Component
 export default function FriendsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [findFriendsSearchQuery, setFindFriendsSearchQuery] =
+    useState<string>("");
+
+  const debouncedSearchQuery = useDebounce(searchQuery);
+  const debouncedFindFriendsQuery = useDebounce(findFriendsSearchQuery);
   const [activeTab, setActiveTab] = useState("my-friends");
 
-  const { friends, friendsLoading, friendsError } = useFriends();
+  // const { friends } = useFriends();
   const { friendRequests, isLoading, error } = useFriendRequests();
+  // const { friendSugestions } = useFindFriends();
+
+  // Use server-side search for friends
   const {
-    friendSugestions,
+    friendSearchResults: filteredFriends,
+    isLoading: friendsLoading,
+    error: friendsError,
+  } = useFriendSearch(debouncedSearchQuery);
+
+  // Use server-side search for all users in Find Friends tab
+  const {
+    searchResults: filteredSuggestions,
     isLoading: findFriendsLoading,
     error: findFriendsError,
-  } = useFindFriends();
-
-  // Filter friends based on search query
-  const filteredFriends = friends?.filter(
-    (friend) =>
-      friend.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      friend.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      friend.username?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Filter suggested friends based on search query
-  const filteredSuggestions = friendSugestions?.filter(
-    (user: User) =>
-      user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.bio &&
-        user.bio.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (user.location &&
-        user.location.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  } = useSearch(debouncedFindFriendsQuery);
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,8 +116,16 @@ export default function FriendsPage() {
                     : "Search for new friends..."
                 }
                 className="pl-10 py-6 rounded-full bg-muted/50 border-none focus-visible:ring-primary focus-visible:ring-offset-2"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={
+                  activeTab === "my-friends"
+                    ? searchQuery
+                    : findFriendsSearchQuery
+                }
+                onChange={(e) =>
+                  activeTab === "my-friends"
+                    ? setSearchQuery(e.target.value)
+                    : setFindFriendsSearchQuery(e.target.value)
+                }
               />
             </div>
             <Button
@@ -141,7 +142,8 @@ export default function FriendsPage() {
             {searchQuery && (
               <div className="bg-muted/30 py-2 px-4 rounded-full inline-block">
                 <p className="text-sm text-muted-foreground">
-                  Found {friends?.length} results for &quot;{searchQuery}
+                  Found {filteredSuggestions?.length} results for &quot;
+                  {searchQuery}
                   &quot;
                 </p>
               </div>
@@ -159,15 +161,18 @@ export default function FriendsPage() {
             {searchQuery && (
               <div className="bg-muted/30 py-2 px-4 rounded-full inline-block">
                 <p className="text-sm text-muted-foreground">
-                  Found {filteredFriends?.length} results for &quot;
+                  Found {filteredSuggestions?.length} results for &quot;
                   {searchQuery}&quot;
                 </p>
               </div>
             )}
             <FindFriendList
-              friends={filteredSuggestions}
+              friends={filteredSuggestions as Users}
               loading={findFriendsLoading}
               error={findFriendsError?.message as string}
+              type="find-friends"
+              hasSearched={!!debouncedSearchQuery}
+              showDefaultList={!debouncedSearchQuery}
             />
           </TabsContent>
 

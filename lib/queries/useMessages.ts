@@ -6,7 +6,7 @@ import api from "../api";
 interface SendMessageRequest {
   recipientId: string;
   text: string;
-  attachments?: File[];
+  attachments?: string[]; // ✅ Now using string[] for attachments
 }
 
 export const useMessages = (
@@ -39,7 +39,7 @@ export const useMessages = (
         throw new Error(err || "Failed to fetch messages");
       }
     },
-    enabled: !!conversationId, // Only run query if conversationId exists
+    enabled: !!conversationId,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -64,34 +64,22 @@ export const useSendMessage = () => {
       text,
       attachments,
     }: SendMessageRequest) => {
-      // For file uploads, we need FormData
-      if (attachments && attachments.length > 0) {
-        const formData = new FormData();
-        formData.append("text", text);
-        formData.append("recipientId", recipientId); // Added recipientId
-        attachments.forEach((file) => {
-          formData.append("attachments", file);
-        });
-        const response = await api.post(`/messages`, formData);
-        if (response.status !== 201) {
-          throw new Error("Failed to send message");
-        }
-        return response.data.data;
-      } else {
-        // For text-only messages
-        const response = await api.post(`/messages`, { text, recipientId });
-        if (response.status !== 201) {
-          throw new Error("Failed to send message");
-        }
-        return response.data.data;
+      const response = await api.post(`/messages`, {
+        text,
+        recipientId,
+        attachments, // ✅ Directly pass string[] attachments
+      });
+
+      if (response.status !== 201) {
+        throw new Error("Failed to send message");
       }
+
+      return response.data.data;
     },
     onSuccess: (data, variables) => {
-      // Invalidate and refetch the conversation query
       queryClient.invalidateQueries({
-        queryKey: ["messages", "conversation", variables.recipientId], // Changed from conversationId to recipientId
+        queryKey: ["messages", "conversation", variables.recipientId],
       });
-      // Also update the conversations list
       queryClient.invalidateQueries({
         queryKey: ["conversations"],
       });

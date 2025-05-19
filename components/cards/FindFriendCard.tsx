@@ -3,7 +3,20 @@ import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { MessageCircle, UserPlus, UserCheck, UserMinus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import {
+  MessageCircle,
+  UserPlus,
+  UserCheck,
+  UserMinus,
+  MoreHorizontal,
+  Eye,
+} from "lucide-react";
 import { User } from "@/types/user";
 import {
   useAcceptFriendRequest,
@@ -14,8 +27,15 @@ import {
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useFollow } from "@/lib/queries/useFollow";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  useConversations,
+  useCreateConversation,
+} from "@/lib/queries/useConversationStore";
 
 const FindFriendCard = ({ user }: { user: User }) => {
+  const router = useRouter();
   const { user: currentUser } = useAuthStore();
   const { followUser, unfollowUser, isLoading: followLoading } = useFollow();
   const { sentRequests, isLoading: checkingRequest } = useSentRequests();
@@ -25,34 +45,31 @@ const FindFriendCard = ({ user }: { user: User }) => {
     isSuccess,
     error,
   } = useAddFriend();
-  const {
-    friendRequests,
-    // isLoading: loadingRequests,
-  } = useFriendRequests();
+  const { friendRequests } = useFriendRequests();
   const {
     acceptFriendRequest,
     isLoading: acceptingRequest,
-    // isSuccess: acceptedRequest,
     error: acceptRequestError,
   } = useAcceptFriendRequest();
 
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const isAlreadyFollowing = useMemo(() => {
-    return currentUser?.following?.includes(user.id);
-  }, [currentUser, user.id]);
+  const isAlreadyFollowing = currentUser?.following?.includes(user.id);
 
-  // Check if we've already sent a request to this user
   const requestAlreadySent = useMemo(() => {
     return sentRequests?.some((request) => request.recipient.id === user.id);
   }, [sentRequests, user.id]);
 
-  // Check if we've received a request from this user
   const requestAlreadyReceived = useMemo(() => {
-    return friendRequests?.some(
-      (request) => request.requester.id === user.id // Check if request is from this user
-    );
+    return friendRequests?.some((request) => request.requester.id === user.id);
   }, [friendRequests, user.id]);
+
+  // Use the fetch conversation hook
+  const { conversations = [], refetch } = useConversations();
+
+  // Use the create conversation hook
+  const { createConversation, isLoading: isCreatingConversation } =
+    useCreateConversation();
 
   const handleFollowToggle = async () => {
     try {
@@ -87,7 +104,32 @@ const FindFriendCard = ({ user }: { user: User }) => {
     }
   };
 
-  // Determine which button state to show
+  const handleMessage = async () => {
+    try {
+      // Check if conversation with this user already exists
+      const existingConversation = conversations.find(
+        (conversation) => conversation.recipient?.id === (user.id as string)
+      );
+
+      if (existingConversation) {
+        // If exists, navigate to existing conversation
+        router.push(`/messages/${existingConversation.id}`);
+      } else {
+        // If not, create new conversation and navigate to it
+        const result = await createConversation(user.id as string);
+
+        if (result?.data) {
+          router.push(`/messages/${result.data.id}`);
+          // Refresh the conversation list
+          refetch();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      toast.error("Failed to send message. Please try again.");
+    }
+  };
+
   const getFriendButtonState = () => {
     if (checkingRequest) {
       return { text: "Checking...", disabled: true, variant: "outline" };
@@ -175,47 +217,90 @@ const FindFriendCard = ({ user }: { user: User }) => {
               ))}
             </div>
           )}
-
           <div className="flex-grow"></div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
-          {/* Follow/Unfollow */}
-          <Button
-            className="flex items-center justify-center gap-2"
-            variant={isAlreadyFollowing ? "outline" : "default"}
-            onClick={handleFollowToggle}
-            disabled={isUpdating || followLoading}
-          >
-            {isAlreadyFollowing ? (
-              <>
-                <UserMinus className="h-4 w-4" /> Unfollow
-              </>
-            ) : (
-              <>
-                <UserPlus className="h-4 w-4" /> Follow
-              </>
-            )}
-          </Button>
+        {/* Conditional buttons */}
+        <>
+          {user.id === currentUser?.id ? (
+            <Link href="/profile" className="w-full">
+              <Button
+                variant="default"
+                className="w-full flex items-center justify-center gap-2 "
+              >
+                View Profile
+              </Button>
+            </Link>
+          ) : (
+            <div className="grid grid-cols-2 justify-center gap-2 mt-4">
+              <div className="col-span-2 flex gap-2 relative">
+                {/* View Profile Button */}
+                <Link href={`/profile/${user.username}`} className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <Eye className="h-4 w-4" /> View Profile
+                  </Button>
+                </Link>
 
-          {/* Add Friend or Accept Friend */}
-          <Button
-            className="flex items-center justify-center gap-2"
-            // variant={friendButtonState.variant}
-            disabled={friendButtonState.disabled}
-            onClick={handleAddFriend}
-          >
-            {friendButtonState.text}
-          </Button>
+                {/* Message Button */}
 
-          {/* Message */}
-          <Button
-            variant="outline"
-            className="flex items-center justify-center gap-2"
-          >
-            <MessageCircle className="h-4 w-4" /> Message
-          </Button>
-        </div>
+                <Button
+                  variant="outline"
+                  onClick={handleMessage}
+                  className="w-full flex items-center justify-center gap-2 flex-1"
+                  disabled={isCreatingConversation}
+                >
+                  {isCreatingConversation ? (
+                    "..."
+                  ) : (
+                    <>
+                      <MessageCircle className="h-4 w-4" /> Message
+                    </>
+                  )}
+                </Button>
+
+                {/* Three Dot Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -top-10 right-0"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {/* Follow/Unfollow Option */}
+                    <DropdownMenuItem
+                      onClick={handleFollowToggle}
+                      disabled={isUpdating || followLoading}
+                    >
+                      {isAlreadyFollowing ? (
+                        <>
+                          <UserMinus className="h-4 w-4 mr-2" /> Unfollow
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4 mr-2" /> Follow
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    {/* Add/Accept Friend Option */}
+                    <DropdownMenuItem
+                      onClick={handleAddFriend}
+                      disabled={friendButtonState.disabled}
+                    >
+                      {friendButtonState.text}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          )}
+        </>
 
         {(error || acceptRequestError) && (
           <p className="text-sm text-red-500 mt-2 text-center">

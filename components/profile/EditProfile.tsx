@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import React from "react";
 
 type EditProfileFormProps = {
@@ -10,16 +11,21 @@ type EditProfileFormProps = {
     bio: string;
     location: string;
     dateOfBirth: Date;
+    isPrivate?: boolean;
     // website?: string;
   };
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
+  onPrivacyToggle: (isPrivate: boolean) => void;
+  disabled: boolean;
 };
 
 const EditProfileForm: React.FC<EditProfileFormProps> = ({
   formData,
   handleInputChange,
+  onPrivacyToggle,
+  disabled,
 }) => {
   return (
     <div className="grid gap-4 py-4">
@@ -77,17 +83,21 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
         />
       </div>
 
-      {/* Uncomment if needed
-      <div>
-        <Label htmlFor="website">Website</Label>
-        <Input
-          id="website"
-          name="website"
-          value={formData.website}
-          onChange={handleInputChange}
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <Label>Make Account Private</Label>
+          <p className="text-sm text-muted-foreground">
+            Only approved followers can see your posts
+          </p>
+        </div>
+        <Switch
+          id="isPrivate"
+          name="isPrivate"
+          checked={formData.isPrivate}
+          onCheckedChange={onPrivacyToggle}
+          disabled={disabled}
         />
       </div>
-      */}
     </div>
   );
 };

@@ -13,10 +13,11 @@ import {
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const Sidebar = () => {
+  const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { logout } = useAuthStore();
@@ -32,8 +33,8 @@ const Sidebar = () => {
   ];
 
   const handleLogout = () => {
+    router.push("/signin");
     logout();
-    window.location.reload();
   };
   return (
     <aside

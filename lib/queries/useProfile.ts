@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "../queryClient";
 import api from "../api";
 import { useState } from "react";
+import { User } from "@/types/user";
 
 // Hook to get user profile
 export const useProfile = (options = {}) => {
@@ -42,7 +43,7 @@ export const useUpdateProfile = () => {
   const [error, setError] = useState<string | null>(null);
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (profileData: any) => {
+    mutationFn: async (profileData: Partial<User>) => {
       setIsLoading(true);
       setError(null);
 
@@ -66,7 +67,7 @@ export const useUpdateProfile = () => {
     },
   });
 
-  const updateProfile = async (profileData: any) => {
+  const updateProfile = async (profileData: Partial<User>) => {
     return updateProfileMutation.mutateAsync(profileData);
   };
 
@@ -202,7 +203,7 @@ export const useTogglePrivacy = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["profile"],
+        queryKey: ["me"],
       });
     },
     onError: (error: Error) => {

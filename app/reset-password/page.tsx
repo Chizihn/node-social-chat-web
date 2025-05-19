@@ -362,7 +362,7 @@ export default function ResetPassword() {
 
         <CardFooter className="justify-center border-t border-gray-100 pt-4">
           <Link
-            href="/login"
+            href="/signin"
             className="text-blue-600 hover:text-blue-800 font-medium text-sm"
           >
             Return to login

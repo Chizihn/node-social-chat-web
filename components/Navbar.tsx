@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
+import { DEFAULT_USER_IMG } from "@/constants";
 
 const Navbar = () => {
   const user = useAuthStore((state) => state.user);
@@ -90,7 +91,7 @@ const Navbar = () => {
           {/* Avatar with status indicator */}
           <div className="relative">
             <Avatar className="h-9 w-9 border-2 border-background transition-transform hover:scale-105">
-              <AvatarImage src="/images/user.webp" alt="User" />
+              <AvatarImage src={user?.avatar || DEFAULT_USER_IMG} alt="User" />
               <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                 U
               </AvatarFallback>
@@ -146,7 +147,7 @@ const Navbar = () => {
                 <div className="mt-auto p-4 border-t">
                   <div className="flex items-center gap-3 mb-4">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src="/images/user.webp" alt="User" />
+                      <AvatarImage src={user?.avatar} alt="User" />
                       <AvatarFallback>U</AvatarFallback>
                     </Avatar>
                     <div>

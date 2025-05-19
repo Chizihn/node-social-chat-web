@@ -1,7 +1,7 @@
 export enum Gender {
-  MALE = "Male",
-  FEMALE = "Female",
-  OTHER = "Other",
+  MALE = "MALE",
+  FEMALE = "FEMALE",
+  OTHER = "OTHER",
 }
 
 export interface User {
@@ -26,6 +26,8 @@ export interface User {
   readonly createdAt: Date | null;
   readonly updatedAt?: Date;
 }
+
+export type CompleteProfile = Pick<User, "firstName" | "lastName">;
 
 export type Users = User[];
 

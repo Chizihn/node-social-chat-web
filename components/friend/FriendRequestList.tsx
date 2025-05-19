@@ -1,7 +1,8 @@
-import {  Friends } from "@/types/friend";
+import { Friends } from "@/types/friend";
 import React from "react";
 import FriendRequestCard from "../cards/FriendRequestCard";
 import { Bell } from "lucide-react";
+import Loading from "../Loading";
 
 interface FriendRequestListProps {
   friendRequests: Friends;
@@ -16,7 +17,7 @@ const FriendRequestList: React.FC<FriendRequestListProps> = ({
 }) => {
   if (loading) {
     <div>
-      <p>Loading friend requests...</p>
+      <Loading />
     </div>;
   }
 

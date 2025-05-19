@@ -1,6 +1,13 @@
 "use client";
 import { useState } from "react";
-import { Calendar, MapPin, MoreHorizontal, MessageCircle } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  MoreHorizontal,
+  MessageCircle,
+  UserPlus,
+  UserMinus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,15 +21,25 @@ import {
 import Image from "next/image";
 import { toast } from "sonner";
 import { useFollow } from "@/lib/queries/useFollow";
-import { useUserByUsername } from "@/lib/queries/useUsers";
+import { useUserByUsername, useBlockUser } from "@/lib/queries/useUsers";
 import { useGetUserPosts } from "@/lib/queries/usePost";
 import PostView from "../feed/PostView";
 import Loading from "../Loading";
 import { useAuthStore } from "@/store/useAuthStore";
 import { queryClient } from "@/lib/queryClient";
+import {
+  useAddFriend,
+  useFriends,
+  useRemoveFriend,
+} from "@/lib/queries/useFriends";
+import { axiosErrorHandler } from "@/utils/error";
 
 const UserProfile: React.FC<{ username: string }> = ({ username }) => {
   const { followUser, unfollowUser, isLoading: followLoading } = useFollow();
+  const { friends } = useFriends();
+  const { addFriend, isLoading: addingFriend } = useAddFriend();
+  const { removeFriend, isLoading: removingFriend } = useRemoveFriend();
+  const { blockUser, isLoading: isBlocking } = useBlockUser();
   const [isUpdating, setIsUpdating] = useState(false);
 
   const currentUser = useAuthStore((state) => state.user);
@@ -42,6 +59,8 @@ const UserProfile: React.FC<{ username: string }> = ({ username }) => {
   const isAlreadyFollowing = user?.followers?.includes(
     currentUser?.id as string
   );
+
+  const isFriend = friends?.some((friend) => friend.id === user?.id);
 
   if (isLoading) return <Loading />;
 
@@ -112,20 +131,65 @@ const UserProfile: React.FC<{ username: string }> = ({ username }) => {
           </div>
 
           <div className="flex gap-2">
-            {/* Follow/Unfollow Button */}
-            <Button
-              className="flex items-center justify-center gap-2"
-              variant={isAlreadyFollowing ? "outline" : "default"}
-              onClick={handleFollowToggle}
-              disabled={isUpdating || followLoading}
-            >
-              {isAlreadyFollowing ? <>Unfollow</> : <>Follow</>}
-            </Button>
-            {/* Message Button */}
-            <Button variant="outline" className="rounded-full">
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Message
-            </Button>
+            {currentUser?.id === user.id ? (
+              ""
+            ) : (
+              <>
+                {/* Follow/Unfollow Button */}
+                <Button
+                  className="flex items-center justify-center gap-2"
+                  variant={isAlreadyFollowing ? "outline" : "default"}
+                  onClick={handleFollowToggle}
+                  disabled={isUpdating || followLoading}
+                >
+                  {isAlreadyFollowing ? <>Unfollow</> : <>Follow</>}
+                </Button>
+                {/* Friend Button */}
+                <Button
+                  className="flex items-center justify-center gap-2"
+                  variant={isFriend ? "destructive" : "outline"}
+                  onClick={async () => {
+                    try {
+                      setIsUpdating(true);
+                      if (isFriend) {
+                        await removeFriend(user.id);
+                        queryClient.invalidateQueries({
+                          queryKey: ["user", username],
+                        });
+                        toast.success("Removed from friends");
+                      } else {
+                        await addFriend(user.id);
+                        toast.success("Friend request sent");
+                      }
+                    } catch (error) {
+                      console.error("Friend action error:", error);
+                      toast.error("Error updating friend status");
+                    } finally {
+                      setIsUpdating(false);
+                    }
+                  }}
+                  disabled={isUpdating || addingFriend || removingFriend}
+                >
+                  {isFriend ? (
+                    <>
+                      <UserMinus className="h-4 w-4 mr-2" />
+                      Unfriend
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add Friend
+                    </>
+                  )}
+                </Button>
+                {/* Message Button */}
+                <Button variant="outline" className="rounded-full">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Message
+                </Button>
+              </>
+            )}
+
             {/* More Options Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -137,8 +201,37 @@ const UserProfile: React.FC<{ username: string }> = ({ username }) => {
                 <DropdownMenuItem>Share Profile</DropdownMenuItem>
                 <DropdownMenuItem>Copy Profile Link</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-500">
+                <DropdownMenuItem
+                  className="text-red-500"
+                  onClick={async () => {
+                    try {
+                      await blockUser(user.id);
+                      toast.success(`Blocked ${user.username}`);
+                      // Optionally redirect or update UI
+                    } catch (error) {
+                      const err = axiosErrorHandler(error);
+                      console.error("Block user error:", err);
+                      toast.error("Failed to block user");
+                    }
+                  }}
+                  disabled={isBlocking}
+                >
                   Block User
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-500"
+                  onClick={async () => {
+                    try {
+                      await blockUser(user.id);
+                      toast.success("User blocked successfully");
+                    } catch (error) {
+                      const err = axiosErrorHandler(error);
+                      toast.error(err || "Failed to block user");
+                    }
+                  }}
+                  disabled={isBlocking}
+                >
+                  {isBlocking ? "Blocking..." : "Block User"}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-red-500">
                   Report Profile
@@ -203,7 +296,7 @@ const UserProfile: React.FC<{ username: string }> = ({ username }) => {
           <div className="px-[2rem]">
             <TabsContent value="posts" className="mt-4">
               {postsLoading ? (
-                <p className="text-muted-foreground px-4">Loading posts...</p>
+                <Loading />
               ) : error ? (
                 <p className="text-destructive px-4">
                   {" "}

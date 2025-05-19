@@ -11,7 +11,7 @@ import {
   useConversation,
   useConversations,
 } from "@/lib/queries/useConversationStore";
-import { Message, MessageStatus, Attachment } from "@/types/message";
+import { Message, MessageStatus } from "@/types/message";
 import { useMessages, useSendMessage } from "@/lib/queries/useMessages";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSocketStore } from "@/store/useSocketStore";
@@ -121,31 +121,23 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  const handleSendMessage = async (text: string, files?: File[]) => {
-    if (!text.trim() && (!files || files.length === 0)) return;
+  const handleSendMessage = async (text: string, attachmentUrls?: string[]) => {
+    if (!text.trim() && (!attachmentUrls || attachmentUrls.length === 0))
+      return; // Don't send empty messages
+
     if (!id || !user?.id || !recipient?.id) return;
 
     // Create a temporary message ID
     const tempId = `temp-${Date.now()}`;
 
-    // Prepare attachments if files exist
-    let attachments: Attachment[] | undefined;
-    if (files && files.length > 0) {
-      attachments = files.map((file) => ({
-        name: file.name,
-        type: file.type,
-        url: URL.createObjectURL(file),
-      }));
-    }
-
-    // Add optimistic update
+    // Add optimistic update for message (with attachments if they exist)
     const newMessage: Message = {
       id: tempId,
       conversation: id as string,
       sender: user,
-      text,
+      text: text.trim(), // Send an empty string if there's no text
       status: MessageStatus.SENT,
-      attachments,
+      attachments: attachmentUrls, // Attach URLs of files (as string[])
       timestamp: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -155,11 +147,11 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, newMessage]);
 
     try {
-      // Send via API
+      // Send message via API (now with string[] for attachments)
       const response = await sendMessageApi({
         recipientId: recipient.id,
-        text,
-        attachments: files,
+        text: text.trim(), // Ensure sending an empty string if no text
+        attachments: attachmentUrls, // Send attachment URLs as string[]
       });
 
       console.log("Message sent via API, response:", response);
@@ -172,7 +164,11 @@ export default function ChatPage() {
       // Send notification via socket if connected
       if (isConnected && sendSocketMessage) {
         console.log("Sending message via socket to recipient:", recipient.id);
-        const socketSent = sendSocketMessage(recipient.id, text, attachments);
+        const socketSent = sendSocketMessage(
+          recipient.id,
+          text.trim(),
+          attachmentUrls
+        );
         if (!socketSent) {
           console.warn("Socket message sending failed, socket not connected");
           // If socket is not connected, try to reconnect

@@ -1,3 +1,4 @@
+import { User } from "@/types/user";
 import { axiosErrorHandler } from "../error";
 import api from "@/lib/api";
 
@@ -14,7 +15,7 @@ export const getProfile = async () => {
 };
 
 // Function to update profile information
-export const updateProfile = async (profileData: any) => {
+export const updateProfile = async (profileData: Partial<User>) => {
   try {
     const response = await api.put(`/profile/update`, profileData);
     return response.data;

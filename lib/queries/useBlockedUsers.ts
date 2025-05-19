@@ -1,22 +1,21 @@
 import { axiosErrorHandler } from "@/utils/error";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { User } from "@/types/user";
+import { useQuery } from "@tanstack/react-query";
 import api from "../api";
 
 // Hook to get list of blocked users
 export const useBlockedUsers = (options = {}) => {
   const {
-    data: blockedUsers,
+    data: blockedUsersIds,
     isLoading,
     error,
     refetch,
     isFetching,
-  } = useQuery<User[]>({
+  } = useQuery<string[]>({
     queryKey: ["blockedUsers"],
     queryFn: async () => {
       try {
         const response = await api.get(`/users/blocked`);
-        return response.data;
+        return response.data?.blockedUserIds;
       } catch (error) {
         const err = axiosErrorHandler(error);
         throw new Error(err || "Failed to fetch blocked users");
@@ -29,7 +28,7 @@ export const useBlockedUsers = (options = {}) => {
   });
 
   return {
-    blockedUsers,
+    blockedUsersIds,
     isLoading,
     error,
     refetch,

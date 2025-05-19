@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>()(
           const res = await api.post<SignupResponse>(`/auth/signup`, data);
 
           const { user, token } = res.data;
-          toast.success("Signup successful! Please verify your email.");
+          // toast.success("Signup successful! Please verify your email.");
 
           cookieStorage.setItem("token", token);
 

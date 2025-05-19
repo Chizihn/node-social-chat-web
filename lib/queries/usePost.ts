@@ -78,10 +78,11 @@ export const usePostsForYou = (options = {}) => {
     queryKey: ["foryou", page, limit], // Fixed typo + added pagination params to key
     queryFn: async () => {
       try {
-        const response = await api.get(`/posts`, {
+        const response = await api.get(`/posts/feed`, {
           params: {
             page,
             limit,
+            type: "foryou",
           },
         });
 

@@ -6,13 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "../ui/button";
 import {
-  Bookmark,
   Check,
   Heart,
   MapPin,
   MessageCircle,
   MoreHorizontal,
-  Share2,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Post } from "@/types/post";
@@ -169,8 +167,8 @@ const PostView: React.FC<PostProps> = ({ post, loading, error }) => {
                       <Image
                         src={url}
                         alt={`Post image ${index + 1}`}
-                        width={800}
-                        height={500}
+                        width={300}
+                        height={200}
                         className="w-full h-full object-cover hover:scale-105 transition-transform"
                       />
                     </div>
@@ -206,12 +204,12 @@ const PostView: React.FC<PostProps> = ({ post, loading, error }) => {
                 <MessageCircle className="h-4 w-4 mr-1" />
                 {post.comments}
               </Button>
-              <Button variant="ghost" size="sm" className="rounded-full">
+              {/* <Button variant="ghost" size="sm" className="rounded-full">
                 <Share2 className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" className="rounded-full">
                 <Bookmark className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>

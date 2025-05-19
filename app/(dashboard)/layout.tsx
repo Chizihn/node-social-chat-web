@@ -34,7 +34,7 @@ export default function DashboardLayout({
           throw new Error("Failed to fetch user data");
         }
 
-        setUser(response.data.user);
+        setUser(response.data.data);
         return response.data; // Return the data
       } catch (error) {
         console.error("Error auth", error);

@@ -32,7 +32,7 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     if (user?.isVerified) {
-      toast.success("Email already verified!");
+      // toast.success("Email already verified!");
       router.push("/feed");
     }
   }, [router, user?.isVerified]);
@@ -82,7 +82,7 @@ export default function VerifyEmail() {
       setSuccess(true);
 
       // Redirect after successful verification
-      router.push("/feed");
+      router.push("/complete-profile");
     } catch (err) {
       const errorMessage = axiosErrorHandler(err);
       setError(errorMessage || "Failed to verify email");

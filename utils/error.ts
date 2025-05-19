@@ -26,6 +26,10 @@ export function axiosErrorHandler(error: unknown, message?: string): string {
         case 404:
           errorMessage = "Not found.";
           break;
+
+        case 429:
+          errorMessage = "Too many requests. Try again later.";
+          break;
         case 500:
           errorMessage = "Internal server error.";
           break;
